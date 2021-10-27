@@ -25,6 +25,9 @@ share/python-wheels/
 *.egg-info/
 .installed.cfg
 *.egg
+testing_suite/relax_test_data/
+testing_suite/pdfsaver_output/
+
 MANIFEST
 
 # PyInstaller

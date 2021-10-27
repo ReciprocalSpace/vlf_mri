@@ -1,6 +1,7 @@
 import vlf_mri
 from pathlib import Path
 
+
 folder = Path("relax_test_data")
 file = Path("relax_test_data/sang-0p5C.sdf")
 
@@ -55,12 +56,21 @@ def test_apply_mask():
     print(fid_matrix)
 
 
+def test_save_to_pdf():
+    print("*" * 32 + " test_apply_mask")
+    fid_matrix = vlf_mri.import_SDF_file(file)
+    fid_matrix.apply_mask(sigma=2, dims="xyz", display_report=False)
+
+    fid_matrix.save_to_pdf(fit_to_plot=None, display=False)
+
+
 if __name__ == "__main__":
-    test_import_SDF_file()
-    test_print_repr()
-    test_slice_1()
-    test_slice_2()
-    test_slice_3()
-    test_slice_4()
-    test_apply_mask()
+    # test_import_SDF_file()
+    # test_print_repr()
+    # test_slice_1()
+    # test_slice_2()
+    # test_slice_3()
+    # test_slice_4()
+    # test_apply_mask()
+    test_save_to_pdf()
 

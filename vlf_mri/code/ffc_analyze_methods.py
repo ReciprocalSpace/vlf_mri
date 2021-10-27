@@ -17,8 +17,6 @@ from math import ceil
 from numpy import ma
 from pathlib import Path
 from scipy.optimize import minimize
-from scipy.stats import rice
-from cycler import cycler
 
 mpl.rc('font', **{'size': 9})
 
