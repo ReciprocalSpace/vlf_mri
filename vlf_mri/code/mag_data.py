@@ -48,6 +48,91 @@ class MagData(VlfData):
 
         self.mag_matrix = output
 
+    def apply_mask(self, sigma=2., dims="xy", display_report=False) -> None:
+        """ Mask aberrant values in mag_matrix
+
+        Find and mask aberrant values in the fid data matrix. Aberrant values are defined as either negative values
+        or discontinuities in the signal. Discontinuities in the data are found by evaluating the normalized gradient
+        of the signal toward all dimensions, and rejecting the data points whose normalized gradient magnitude is
+        greater than a chosen sigma.
+
+        The normalized gradient towards the i^th  dimension is defined as (grad_i(FID) - mean(grad_i(FID))/
+        std(grad_i(FID).
+
+        If display_masked_data is True, then the data result of
+
+        Parameters
+        ----------
+        sigma: float
+            Rejection criterion for the data points. Default is 2.
+
+        display_report: bool
+            Display the results of masking procedure.
+
+        Returns
+        -------
+        None
+        :param dims:
+        """
+        # Apply a mask aberrant data
+        ind = self.mag_matrix <= 0.
+        self.mask[ind] = True
+
+        grad = np.array(np.gradient(self.mag_matrix))
+        # Normalize gradient array
+        axis = (1, 2)
+        grad_mean = np.expand_dims(grad.mean(axis=axis), axis=axis)
+        grad_std = np.expand_dims(grad.std(axis=axis), axis=axis)
+        grad = (grad - grad_mean) / grad_std
+
+        # grad_n = np.sqrt(grad[0] ** 2 + grad[1] ** 2 + grad[2] ** 2)
+        grad_B = grad[0] if 'x' in dims else 0
+        grad_tau = grad[1] if 'y' in dims else 0
+        grad_n = np.sqrt(grad_B ** 2 + grad_tau ** 2)
+
+        self.mask = np.logical_or(self.mask, grad_n > sigma)
+
+        if display_report:
+            mag_matrix = ma.masked_array(self.mag_matrix, mask=self.mask)
+            fig, (axes_bef, axes_after) = plt.subplots(2, 2, tight_layout=True, figsize=(15 / 2.54, 10 / 2.54))
+
+            fig.suptitle("Report: Apply mask")
+            grad_B, grad_tau = tuple(grad.reshape((2, -1)))
+            grad_n = grad_n.reshape(-1)
+            ind = self.mask.reshape(-1)
+            nb_pts = len(grad_n)
+
+            # First row
+            # First ax
+            axes_bef[0].plot(grad_B[~ind], grad_tau[~ind], ".", c="b",
+                             label=f"Good: {np.sum(~ind) / nb_pts * 100:.2f}%")
+            axes_bef[0].plot(grad_B[ind], grad_tau[ind], ".", c="r", label=f"Bad:  {np.sum(ind) / nb_pts * 100:.2f}%")
+            axes_bef[0].set_xlabel(r'Gradient $\nabla_B$(FID)', labelpad=0)
+            axes_bef[0].set_ylabel("BEFORE\nGradient " r"$\nabla_\tau$(FID)", labelpad=0)
+            axes_bef[1].hist(np.log(grad_n + 1), 30, density=True)  # +1 to avoid log(0)
+            axes_bef[1].set_xlabel(r"Norm $\log(\|\nabla\|)$")
+            axes_bef[1].set_ylabel(r"Point density")
+            # Second row
+            # First ax
+            axes_after[0].plot(grad_B[~ind], grad_tau[~ind], ".", c="b", label="_")
+            axes_after[0].set_xlabel(r'Gradient $\nabla_B$(FID)', labelpad=0)
+            axes_after[0].set_ylabel("AFTER\nGradient " r"$\nabla_\tau$(FID)", labelpad=0)
+            # Second ax
+            axes_after[1].hist(np.log(grad_n[~ind] + 1), 30, density=True)  # +1 to avoid log(0)
+            axes_after[1].set_xlabel(r"Norm $\log(\|\nabla\|)$", labelpad=0)
+            axes_after[1].set_ylabel("Point density", labelpad=0)
+            # Finishing legend and labels...
+            lines_labels = [ax.get_legend_handles_labels() for ax in np.array(fig.axes).flatten()]
+            for ax in np.array(fig.axes).flatten():
+                ax.tick_params(axis='both', which='major', pad=0)
+            lines, labels = [sum(lol, []) for lol in zip(*lines_labels)]
+            fig.legend(lines, labels, title=f"{nb_pts} data points")
+
+            plt.show()
+
+            self.batch_plot("Report: MAG after mask")
+
+
     @staticmethod
     def model_mono_exp(tau, amp, R1):
         return amp * np.exp(-R1 * tau)

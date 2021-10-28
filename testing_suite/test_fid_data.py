@@ -8,7 +8,6 @@ file = Path("relax_test_data/sang-0p5C.sdf")
 
 def test_import_SDF_file():
     print("*"*32+" test_import_SDF_file")
-    global file
     fid_matrix = vlf_mri.import_SDF_file(file)
     print(type(fid_matrix))
 
@@ -70,10 +69,10 @@ def test_fid_to_mag():
 
 
 if __name__ == "__main__":
-    # test_import_SDF_file()
-    # test_print_repr()
-    # test_indexing()
-    # test_apply_mask()
-    # test_save_to_pdf()
+    test_import_SDF_file()
+    test_print_repr()
+    test_indexing()
+    test_apply_mask()
+    test_save_to_pdf()
     test_fid_to_mag()
 
