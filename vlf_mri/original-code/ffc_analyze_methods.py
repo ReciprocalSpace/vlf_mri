@@ -21,9 +21,6 @@ from scipy.optimize import minimize
 mpl.rc('font', **{'size': 9})
 
 
-
-
-
 def analyse_all_sdf_file_in_directory(directory):
     directory = Path(directory)
     sdf_file_path_generator = glob.glob(directory / '*.sdf')

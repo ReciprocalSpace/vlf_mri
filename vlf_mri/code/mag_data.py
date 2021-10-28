@@ -172,12 +172,12 @@ class MagData(VlfData):
             self.batch_plot("Report: MAG after mask")
 
     @staticmethod
-    def _model_mono_exp(tau, amp, R1):
-        return amp * np.exp(-R1 * tau)
+    def _model_mono_exp(tau, amp, C, R1):
+        return amp * np.exp(-R1 * tau) + C
 
     @staticmethod
-    def _model_bi_exp(tau, amp, alpha, R11, R12):
-        return amp * alpha * np.exp(-R11 * tau) + amp * (1 - alpha) * np.exp(-R12 * tau)
+    def _model_bi_exp(tau, amp, alpha, C, R11, R12):
+        return amp * alpha * np.exp(-R11 * tau) + amp * (1 - alpha) * np.exp(-R12 * tau) + C
 
     @staticmethod
     def _fit_mono_exp(tau, mag, mask):
@@ -186,10 +186,12 @@ class MagData(VlfData):
         R1 = 1 / tau[np.argmin(np.absolute(mag - 0.63))]
         params.add('amp', value=1., min=0.)
         params.add('R1', value=R1, min=0)
+        params.add('C', value=0, min=0)
         ind = ~ mask
         result_mono = mod.fit(mag[ind], params, tau=tau[ind])
         result_mono.best_fit = MagData._model_mono_exp(tau, result_mono.params['amp'].value,
-                                                       result_mono.params['R1'].value)
+                                                       result_mono.params['C'].value,
+                                                       result_mono.params['R1'].value,)
         return result_mono
 
     @staticmethod
@@ -199,11 +201,13 @@ class MagData(VlfData):
         R1 = 1 / tau[np.argmin(np.absolute(mag - 0.63))]
         params.add('amp', value=1., min=0.8, max=1.2)
         params.add('alpha', value=0.5, min=0., max=1.)
-        params.add('R11', value=R1, min=0, max=100)
-        params.add('R12', value=R1 * 2, min=0, max=100)
+        params.add('R11', value=R1, min=0)
+        params.add('R12', value=R1 * 2, min=0)
+        params.add('C', value=0, min=0)
         ind = ~mask
         result_bi = mod.fit(mag[ind], params, tau=tau[ind])
         result_bi.best_fit = MagData._model_bi_exp(tau, result_bi.params['amp'].value, result_bi.params['alpha'].value,
+                                                   result_bi.params['C'].value,
                                                    result_bi.params['R11'].value, result_bi.params['R12'].value)
         return result_bi
 
@@ -222,7 +226,7 @@ class MagData(VlfData):
 
         R1 = np.array([res_i.params['R1'] for res_i in result_mono])
         R11 = np.array([res_i.params['R11'] for res_i in result_bi])
-        R12 = np.array([res_i.params['R11'] for res_i in result_bi])
+        R12 = np.array([res_i.params['R12'] for res_i in result_bi])
         alpha = np.array([res_i.params['alpha'] for res_i in result_bi])
 
         rel_matrix = np.array((R1, R11, R12, alpha))

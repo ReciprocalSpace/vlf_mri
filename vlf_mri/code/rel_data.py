@@ -14,6 +14,19 @@ class RelData(VlfData):
         self.B_relax = B_relax
         self.mask = np.zeros_like(rel_data, dtype=bool) if mask is None else mask
 
+        self._reorder_R11_R12()
+
+    def _reorder_R11_R12(self):
+        R11_R12 = self.rel_matrix[1:3]
+        alpha = self.rel_matrix[3]
+
+        ind = np.argsort(R11_R12, axis=0)
+        R11_R12 = np.sort(R11_R12, axis=0)
+
+        alpha = np.array([[a_i if ind_i == 0 else 1-a_i for a_i, ind_i in zip(alpha, ind[0])]])
+
+        self.rel_matrix[1:] = np.concatenate((R11_R12, alpha))
+
     def __str__(self):
         output = ("-" * 16 + f'REPORT: REL data matrix' + "-" * 16 + "\n" +
                   f"Data file path:             \t{self.data_file_path}\n" +
@@ -26,8 +39,7 @@ class RelData(VlfData):
                    f"{2*self.rel_matrix.shape[1]:,} pts")
         return output
 
-
-    def plot_relaxation(self, result_ajust_mono, result_ajust_bi, B_relax, name_manip, folder):
+    def batch_plot(self, title):
         # Create the pdfsaver object
         file_name = f"{name_manip}_Relaxation.pdf"
         file_path = os.path.join(folder, file_name)
@@ -35,12 +47,7 @@ class RelData(VlfData):
         pdf = PDFSaver(file_path, 1, 3, title, True)
 
         # Prepare and sort the R1, R11, R12 and alpha data into arrays
-        R1 = np.array([res.params['R1'].value for res in result_ajust_mono])
-        R11_R12 = np.array([[res.params['R11'].value, res.params['R12'].value] for res in result_ajust_bi])
-        ind = np.argsort(R11_R12, axis=1)
-        alpha_bi_ = np.array([[res.params['alpha'].value, 1 - res.params['alpha'].value] for res in result_ajust_bi])
-        alpha_bi = np.array([amp_bi_i[ind_i] for amp_bi_i, ind_i in zip(alpha_bi_, ind)])
-        R11_R12 = np.sort(R11_R12, axis=1)
+
 
         # First plot: R1, R11, R12 VS B_relax
         ax = pdf.get_ax()
