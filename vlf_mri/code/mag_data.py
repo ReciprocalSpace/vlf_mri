@@ -70,6 +70,22 @@ class MagData(VlfData):
 
         return MagData(data_file_path, algorithm, mag_matrix, B_relax, tau, mask, best_fit)
 
+    def __str__(self):
+        output = ("-" * 16 + f'REPORT: MAG data matrix' + "-" * 16 + "\n" +
+                  f"Data file path:             \t{self.data_file_path}\n" +
+                  f"Experience name:            \t{self.experience_name}\n" +
+                  f"Output save path:           \t{self.saving_folder}\n" +
+                  "Total mag matrix size:       \t({self.mag_matrix.shape[0]} x {self.mag_matrix.shape[1]}) " +
+                  f"ou {np.prod(self.mag_matrix.shape):,} points\n" +
+                  f"Champs evolution (B_relax): \t{len(self.B_relax)} champs étudiés entre {np.min(self.B_relax):.2e}" +
+                  f" et {np.max(self.B_relax):.2e} MHz\n" +
+                  f"Temps evolution (tau):      \t{self.tau.shape[1]} pts par champ d evolution\n"
+                  )
+        for i, (B_i, tau_i) in enumerate(zip(self.B_relax, self.tau)):
+            output += f"\t\t\t{i + 1}) B_relax={B_i:2.2e} MHz\t\ttau: [{tau_i.min():.2e} à {tau_i.max():.2e}] ms\n"
+        output += f"Mask size:                  \t{np.sum(self.mask):,}/{np.prod(self.mag_matrix.shape):,} pts"
+        return output
+
     def apply_mask(self, sigma=2., dims="xy", display_report=False) -> None:
         """ Mask aberrant values in mag_matrix
 

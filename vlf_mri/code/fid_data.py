@@ -59,7 +59,7 @@ class FidData(VlfData):
 
     def __str__(self):
         output = ("-" * 16 + f'REPORT: FID data matrix' + "-" * 16 + "\n" +
-                  f"SDF file path:              \t{self.data_file_path}\n" +
+                  f"Data file path:             \t{self.data_file_path}\n" +
                   f"Experience name:            \t{self.experience_name}\n" +
                   f"Output save path:           \t{self.saving_folder}\n" +
                   "Total fid matrix size:       \t" +
