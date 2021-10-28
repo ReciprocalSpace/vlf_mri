@@ -10,13 +10,13 @@ from scipy.optimize import minimize
 from scipy.stats import rice
 from tqdm import tqdm
 
-from vlf_mri.lib.pdf_saver import PDFSaver
-from vlf_mri.lib.vlf_data import VlfData
-from vlf_mri.lib.mag_data import MagData
+from vlf_mri.code.pdf_saver import PDFSaver
+from vlf_mri.code.vlf_data import VlfData
+from vlf_mri.code.mag_data import MagData
 
 
-class FidMatrix(VlfData):
-    def __init__(self, fid_file_path: Path, fid_matrix, B_relax, tau, t_fid, mask=None, best_fit=None):
+class FidData(VlfData):
+    def __init__(self, fid_file_path: Path, fid_matrix, B_relax, tau, t_fid, mask=None, best_fit=None) -> None:
         if best_fit is None:
             best_fit = {}
 
@@ -52,7 +52,7 @@ class FidMatrix(VlfData):
         mask = self.mask[sl]
         best_fit = {key: value(item)[sl] for key, value in self.best_fit}
 
-        return FidMatrix(sdf_file_path, fid_matrix, B_relax, tau, t_fid, mask, best_fit)
+        return FidData(sdf_file_path, fid_matrix, B_relax, tau, t_fid, mask, best_fit)
 
     def __str__(self):
         output = ("-" * 16 + f'REPORT: FID data matrix' + "-" * 16 + "\n" +
@@ -75,9 +75,9 @@ class FidMatrix(VlfData):
         return output
 
     def __repr__(self):
-        return f"vlf_mri.FidMatrix(Path('{self.sdf_file_path}'), fid_matrix, B_relax, tau, t_fid, mask, best_fit)"
+        return f"vlf_mri.FidData(Path('{self.sdf_file_path}'), fid_matrix, B_relax, tau, t_fid, mask, best_fit)"
 
-    def apply_mask(self, sigma=2., dims="xyz", display_report=False):
+    def apply_mask(self, sigma=2., dims="xyz", display_report=False) -> None:
         """ Mask aberrant values in fid_matrix
 
         Find and mask aberrant values in the fid data matrix. Aberrant values are defined as either negative values
@@ -181,7 +181,7 @@ class FidMatrix(VlfData):
 
             self.batch_plot("Report: FID after mask")
 
-    def batch_plot(self, suptitle=""):
+    def batch_plot(self, suptitle="") -> None:
         fid_matrix = ma.masked_array(self.fid_matrix, self.mask)
         n_fig = len(self.B_relax)
         n_rows, n_columns = ceil(n_fig / 3), 3
@@ -212,7 +212,7 @@ class FidMatrix(VlfData):
         plt.subplots_adjust(wspace=0, hspace=0)
         plt.show()
 
-    def save_to_pdf(self, fit_to_plot=None, display=False):
+    def save_to_pdf(self, fit_to_plot=None, display=False) -> None:
         print("-" * 16 + "saving FID matrix to PDF" + "-" * 16)
 
         if fit_to_plot is None:
@@ -225,8 +225,7 @@ class FidMatrix(VlfData):
                 best_fit_keys.append(key) if key in self.best_fit else None
 
         fid_matrix = ma.masked_array(self.fid_matrix, self.mask)
-
-        for B_relax_i, tau_i, fid_i in zip(self.B_relax, self.tau, fid_matrix):
+        for i, (B_relax_i, tau_i, fid_i) in enumerate(zip(self.B_relax, self.tau, fid_matrix)):
             file_name = f"{self.experience_name}_FID_{int(B_relax_i)}-{int((B_relax_i % 1) * 1000):03}MHz.pdf"
             file_path = self.saving_folder / file_name
 
@@ -235,38 +234,42 @@ class FidMatrix(VlfData):
             suptitle = (f"{self.experience_name} - FID, " + r"$B_{relax}$=" + f"{B_relax_i:.2f}MHz")
 
             pdf_saver = PDFSaver(file_path, 4, 5, title=suptitle, display_pages=display)
-            for tau_ij, fid_ij in tqdm(zip(tau_i, fid_i), total=len(fid_i)):
+            for j, (tau_ij, fid_ij) in tqdm(enumerate(zip(tau_i, fid_i)), total=len(fid_i)):
                 ax = pdf_saver.get_ax()
                 ax.set_xlabel(r'Temps $t$ [$\mu$s]', fontsize=8)
                 ax.plot(self.t_fid, fid_ij, '.', markersize=1, label=r"$\tau$" + f"= {tau_ij:.2e}")
 
                 for algo in best_fit_keys:
                     fit = self.best_fit[algo]
-                    ax.plot(self.t_fid, fit, '.r', markersize=1, label=algo)
+                    ax.plot(self.t_fid, fit[i, j], '.r', markersize=1, label=algo)
                 ax.legend(loc="lower left", fontsize=8, handlelength=0.5, handletextpad=0.2)
                 ax.grid()
             pdf_saver.close_pdf()
 
-    def to_mag_mean(self, t_0=1., t_1=25.):
-        index_min = np.argmin(np.absolute((self.tau - t_0)))
-        index_max = np.argmin(np.absolute((self.tau - t_1)))
+    def to_mag_mean(self, t_0=1., t_1=25.) -> MagData:
+        index_min = np.argmin(np.absolute((self.t_fid - t_0)))
+        index_max = np.argmin(np.absolute((self.t_fid - t_1)))
 
         mean_mag = np.mean(self.fid_matrix[:, :, index_min:index_max], axis=2)
 
-        mask = np.zeros_like(self.fid_matrix, dtype=bool)
-        mask[:, :, 0:index_max] = True
+        best_fit = np.expand_dims(mean_mag, axis=2)
+        best_fit = np.tile(best_fit, (1, 1, len(self.t_fid)))
 
-        best_fit = np.tile(mean_mag, (1, len(self.t_fid)))
+        mask = np.ones_like(self.fid_matrix, dtype=bool)
+        mask[:, :, index_min:index_max] = False
+
         best_fit = ma.array(best_fit, mask=mask)
+
         self.best_fit["mean"] = best_fit
 
-        return MagData(self.sdf_file_path, "mean", mean_mag, self.B_relax, self.tau, mask)
+        return MagData(self.sdf_file_path, "mean", mean_mag, self.B_relax, self.tau)
 
-    def to_mag_intercept(self, t_0=1., t_1=25.):
+    def to_mag_intercept(self, t_0=1., t_1=25.) -> MagData:
         fid_matrix = self.fid_matrix
+        mask = self.mask
 
-        index_min = np.argmin(np.absolute((self.tau - t_0)))
-        index_max = np.argmin(np.absolute((self.tau - t_1)))
+        index_min = np.argmin(np.absolute((self.t_fid - t_0)))
+        index_max = np.argmin(np.absolute((self.t_fid - t_1)))
 
         shape = self.fid_matrix.shape
         nx, ny, nz = shape
@@ -274,8 +277,11 @@ class FidMatrix(VlfData):
         len_fid = index_max - index_min
 
         Y = fid_matrix[:, :, index_min:index_max].reshape((-1, len_fid)).T
+        Y_mask = mask[:, :, index_min:index_max].reshape((-1, len_fid)).T
+
+        Y = ma.masked_array(Y, Y_mask)
         X = np.tile(np.arange(index_min, index_max), (Y.shape[1], 1)).T
-        X = ma.masked_array(X, Y.mask)
+        X = ma.masked_array(X, Y_mask)
 
         X_mean = X.mean(axis=0)
         X_std = X.std(axis=0)
@@ -302,7 +308,7 @@ class FidMatrix(VlfData):
 
         return MagData(self.sdf_file_path, "intercept", intercept, self.B_relax, self.tau)
 
-    def max_likelihood(self):
+    def max_likelihood(self) -> MagData:
         def likelihood(theta: list, *args):
             M_0, T2, sigma = theta
             t, noisy_signal = args

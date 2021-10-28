@@ -14,8 +14,8 @@ from scipy.optimize import minimize
 from scipy.stats import rice
 from tqdm import tqdm
 
-from vlf_mri.lib.pdf_saver import PDFSaver
-from vlf_mri.lib.vlf_data import VlfData
+from vlf_mri.code.pdf_saver import PDFSaver
+from vlf_mri.code.vlf_data import VlfData
 
 
 class MagData(VlfData):
@@ -26,13 +26,14 @@ class MagData(VlfData):
         self.B_relax = B_relax
         self.tau = tau
 
-        self.mask = np.zeros_like(mag_matrix) if mask is None else mask
+        self.mask = np.zeros_like(mag_matrix, dtype=bool) if mask is None else mask
 
         self._normalize()
         self.mask = np.logical_or(self.mask, self.mag_matrix <= 0)
 
     def _normalize(self):
         output = []
+
         for mag_matrix_i, mask_i in zip(self.mag_matrix, self.mask):
             unmask_data = mag_matrix_i[~mask_i]
             cond = unmask_data[0] < unmask_data[-1]
@@ -127,3 +128,35 @@ class MagData(VlfData):
             ax.set_xscale('log')
             ax.grid()
         pdf.close_pdf()
+
+    def batch_plot(self, suptitle="") -> None:
+        mag_data = ma.masked_array(self.mag_matrix, self.mask)
+        n_fig = len(self.B_relax)
+        n_rows, n_columns = ceil(n_fig / 3), 3
+        fig, axes_2D = plt.subplots(n_rows, n_columns, sharey="all",
+                                    figsize=(16 / 2.54, n_rows * 5 / 2.54),
+                                    squeeze=False)
+        axes_1D = np.array(axes_2D).flatten()
+
+        colormap = plt.cm.get_cmap("plasma")
+        costum_colors = cycler('color', [colormap(x) for x in np.linspace(0, 0.9, len(self.tau.T))])
+
+        # costum_cycler = cycler(color=[colormap(x) for x in np.linspace(0, 0.8, len(tau))])
+        for i, ax in enumerate(axes_1D):
+            ax.set_prop_cycle(cycler('color', costum_colors))
+            if i < len(mag_data):
+                cst = np.max(np.absolute(mag_data[i]))
+                ax.plot(self.tau[i], mag_data[i] / cst, "--.")
+                ax.set_xscale("log")
+                ax.tick_params(axis='both', which='major', pad=0)
+                ax.text(0, 0.9, r"$B_{relax}$=" f"{self.B_relax[i]:.1e} MHz")
+            else:
+                ax.axis('off')
+        for axes_i in axes_2D:
+            axes_i[0].set_ylabel("Mag. [arb. units]")
+
+        for ax in axes_2D[-1]:
+            ax.set_xlabel(r"Time $\tau$ [us]")
+        fig.suptitle(suptitle)
+        plt.subplots_adjust(wspace=0)
+        plt.show()

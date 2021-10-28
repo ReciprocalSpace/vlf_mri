@@ -50,4 +50,4 @@ def import_SDF_file(sdf_file_path: Path):
     fid_matrix_shape = (len(B_relax), len_tau[0], len_fid[0])
     fid_matrix = np.array(raw_data).reshape(fid_matrix_shape)
 
-    return vlf_mri.FidMatrix(sdf_file_path, fid_matrix, B_relax, tau, t_fid)
+    return vlf_mri.FidData(sdf_file_path, fid_matrix, B_relax, tau, t_fid)

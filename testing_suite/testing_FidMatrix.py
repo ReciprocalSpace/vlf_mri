@@ -63,6 +63,22 @@ def test_save_to_pdf():
 
     fid_matrix.save_to_pdf(fit_to_plot=None, display=False)
 
+def test_fid_to_mag():
+    fid_data = vlf_mri.import_SDF_file(file)
+    fid_data.apply_mask(sigma=2, display_report=True)
+    mag_data_mean = fid_data.to_mag_mean()
+    mag_data_intercept = fid_data.to_mag_intercept()
+    mag_data_mean.batch_plot("Test")
+    fid_data.save_to_pdf(display=True)
+
+
+def test_practical_use_of_library():
+    print("*"*32 + " Test pratique")
+    fid_data = vlf_mri.import_SDF_file(file)
+    fid_data.apply_mask(sigma=2, dims="xyz", display_report=True)
+
+
+
 
 if __name__ == "__main__":
     # test_import_SDF_file()
@@ -72,5 +88,6 @@ if __name__ == "__main__":
     # test_slice_3()
     # test_slice_4()
     # test_apply_mask()
-    test_save_to_pdf()
+    # test_save_to_pdf()
+    test_fid_to_mag()
 
