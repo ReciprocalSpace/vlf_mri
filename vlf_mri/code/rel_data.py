@@ -14,7 +14,6 @@ class RelData(VlfData):
         self.B_relax = B_relax
         self.mask = np.zeros_like(rel_data, dtype=bool) if mask is None else mask
 
-
     def __str__(self):
         output = ("-" * 16 + f'REPORT: REL data matrix' + "-" * 16 + "\n" +
                   f"Data file path:             \t{self.data_file_path}\n" +

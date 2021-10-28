@@ -233,23 +233,36 @@ class MagData(VlfData):
 
         return RelData(self.data_file_path, rel_matrix, self.B_relax)  # rel_mask)
 
-    def save_to_pdf(self, display):
+    def save_to_pdf(self, fit_to_plot=None, display=False):
         file_name = f"{self.experience_name}_Aimantation.pdf"
         file_path = self.saving_folder / file_name
         title = f"{self.experience_name} - Magnetization"
 
+        if fit_to_plot is None:
+            best_fit_keys = self.best_fit.keys()
+        elif isinstance(fit_to_plot, str):
+            best_fit_keys = [fit_to_plot] if fit_to_plot in self.best_fit else []
+        else:
+            best_fit_keys = []
+            for key in fit_to_plot:
+                best_fit_keys.append(key) if key in self.best_fit else None
+
         pdf = PDFSaver(file_path, 2, 4, title, True)
-        for tau_i, mag_i, B_relax_i, mono_exp_i, bi_exp_i in zip(self.tau, self.mag_matrix, self.B_relax,
-                                                                 self.best_fit['mono_exp'], self.best_fit["bi_exp"]):
+        for i, (tau_i, mag_i, B_relax_i) in enumerate(zip(self.tau, self.mag_matrix, self.B_relax)):
             ax = pdf.get_ax()
             ax.set_xlabel('$tau$ u.a.', fontsize=8)
             ax.plot(tau_i, mag_i, '*', markersize=5,
                     label=r"$B_{relax}$" + f" = {B_relax_i:.2e} MHz")
-            ax.plot(tau_i, mono_exp_i.best_fit, '--', c='tab:pink', lw=3,
-                    label=r"$R_{1}$" + f"= {mono_exp_i.params['R1'].value:.2f}")
-            ax.plot(tau_i, bi_exp_i.best_fit, '--', c='tab:olive', lw=3,
-                    label=(r"$R_1^{(1)}$" + f"={bi_exp_i.params['R11'].value:.2f}\n"
-                                            r"$R_1^{(2)}$" + f"={bi_exp_i.params['R12'].value:.2f}"))
+
+            for algo in best_fit_keys:
+                fit = self.best_fit[algo]
+                ax.plot(tau_i, fit[i], '--', markersize=1, lw=3)
+
+            # ax.plot(tau_i, mono_exp_i.best_fit, '--', c='tab:pink', lw=3,
+            #         label=r"$R_{1}$" + f"= {mono_exp_i.params['R1'].value:.2f}")
+            # ax.plot(tau_i, bi_exp_i.best_fit, '--', c='tab:olive', lw=3,
+            #         label=(r"$R_1^{(1)}$" + f"={bi_exp_i.params['R11'].value:.2f}\n"
+            #                                 r"$R_1^{(2)}$" + f"={bi_exp_i.params['R12'].value:.2f}"))
             ax.legend(loc="lower left", fontsize='xx-small', handlelength=1, handletextpad=0.2)
             ax.set_xscale('log')
             ax.grid()
@@ -257,11 +270,15 @@ class MagData(VlfData):
             ax = pdf.get_ax()
             ax.set_xlabel('$tau$ u.a.', fontsize=8)
             ax.set_ylabel('Residu', fontsize=8)
-            ax.plot(tau_i, mag_i - mono_exp_i.best_fit, '*', c='tab:pink', markersize=4,
-                    label=r"$R_{1}$" + f"= {mono_exp_i.params['R1'].value:.2f}")
-            ax.plot(tau_i, mag_i - bi_exp_i.best_fit, '*', c='tab:olive', markersize=4,
-                    label=(r"$R_1^{(1)}$" + f"={bi_exp_i.params['R11'].value:.2f}\n"
-                                            r"$R_1^{(2)}$" + f"={bi_exp_i.params['R12'].value:.2f}"))
+            for algo in best_fit_keys:
+                fit = self.best_fit[algo]
+                ax.plot(tau_i, mag_i- fit[i], '*', lw=3, markersize=4)
+
+            # ax.plot(tau_i, mag_i - mono_exp_i.best_fit, '*', c='tab:pink', markersize=4,
+            #         label=r"$R_{1}$" + f"= {mono_exp_i.params['R1'].value:.2f}")
+            # ax.plot(tau_i, mag_i - bi_exp_i.best_fit, '*', c='tab:olive', markersize=4,
+            #         label=(r"$R_1^{(1)}$" + f"={bi_exp_i.params['R11'].value:.2f}\n"
+            #                                 r"$R_1^{(2)}$" + f"={bi_exp_i.params['R12'].value:.2f}"))
             ax.set_xscale('log')
             ax.grid()
         pdf.close_pdf()

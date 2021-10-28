@@ -19,11 +19,6 @@ def test_apply_mask():
     mag_data_mean.apply_mask(sigma=3, display_report=True)
 
 
-def test_to_rel():
-    global mag_data_mean
-    mag_data_mean.batch_plot("Test")
-
-
 def test_to_string():
     global mag_data_mean
     print(mag_data_mean)
@@ -42,9 +37,17 @@ def test_to_rel():
     print(rel_data)
 
 
+def test_save_to_pdf():
+    global mag_data_mean
+    mag_data_mean.apply_mask(sigma=3, display_report=False)
+    rel_data = mag_data_mean.to_rel()
+    mag_data_mean.save_to_pdf(display=True)
+
+
 if __name__=="__main__":
     # test_batch_plot()
     # test_apply_mask()
     # test_slicing()
     # test_to_string()
-    test_to_rel()
+    # test_to_rel()
+    test_save_to_pdf()
