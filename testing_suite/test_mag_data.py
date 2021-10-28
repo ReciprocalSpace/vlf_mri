@@ -20,11 +20,15 @@ def test_apply_mask():
 
 
 def test_to_rel():
-    global file
     global mag_data_mean
     mag_data_mean.batch_plot("Test")
 
 
+def test_slicing():
+    global mag_data_mean
+    new_mag_data = mag_data_mean[1:3]
+
 if __name__=="__main__":
     # test_batch_plot()
-    test_apply_mask()
+    # test_apply_mask()
+    test_slicing()

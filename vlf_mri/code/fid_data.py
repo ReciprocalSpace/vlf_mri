@@ -47,7 +47,7 @@ class FidData(VlfData):
 
         sl = tuple(sl)
 
-        sdf_file_path = self.sdf_file_path
+        data_file_path = self.data_file_path
         fid_matrix = self.fid_matrix[sl]
         B_relax = self.B_relax[sl[0]]
         tau = self.tau[sl[0:2]]
@@ -55,11 +55,11 @@ class FidData(VlfData):
         mask = self.mask[sl]
         best_fit = {key: value[sl] for key, value in self.best_fit.items()}
 
-        return FidData(sdf_file_path, fid_matrix, B_relax, tau, t_fid, mask, best_fit)
+        return FidData(data_file_path, fid_matrix, B_relax, tau, t_fid, mask, best_fit)
 
     def __str__(self):
         output = ("-" * 16 + f'REPORT: FID data matrix' + "-" * 16 + "\n" +
-                  f"SDF file path:              \t{self.sdf_file_path}\n" +
+                  f"SDF file path:              \t{self.data_file_path}\n" +
                   f"Experience name:            \t{self.experience_name}\n" +
                   f"Output save path:           \t{self.saving_folder}\n" +
                   "Total fid matrix size:       \t" +
@@ -78,7 +78,7 @@ class FidData(VlfData):
         return output
 
     def __repr__(self):
-        return f"vlf_mri.FidData(Path('{self.sdf_file_path}'), fid_matrix, B_relax, tau, t_fid, mask, best_fit)"
+        return f"vlf_mri.FidData(Path('{self.data_file_path}'), fid_matrix, B_relax, tau, t_fid, mask, best_fit)"
 
     def apply_mask(self, sigma=2., dims="xyz", display_report=False) -> None:
         """ Mask aberrant values in fid_matrix
@@ -265,7 +265,7 @@ class FidData(VlfData):
 
         self.best_fit["mean"] = best_fit
 
-        return MagData(self.sdf_file_path, "mean", mean_mag, self.B_relax, self.tau)
+        return MagData(self.data_file_path, "mean", mean_mag, self.B_relax, self.tau)
 
     def to_mag_intercept(self, t_0=1., t_1=25.) -> MagData:
         fid_matrix = self.fid_matrix
@@ -309,7 +309,7 @@ class FidData(VlfData):
 
         intercept = b.reshape((nx, ny))
 
-        return MagData(self.sdf_file_path, "intercept", intercept, self.B_relax, self.tau)
+        return MagData(self.data_file_path, "intercept", intercept, self.B_relax, self.tau)
 
     def to_mag_max_likelihood(self) -> MagData:
         def likelihood(theta: list, *args):
@@ -371,4 +371,4 @@ class FidData(VlfData):
 
         self.best_fit["max_likelihood"] = ma.masked_array(best_fit, best_mask )
 
-        return MagData(self.sdf_file_path, "max_likelihood", mag, self.B_relax, self.tau, mag_mask)
+        return MagData(self.data_file_path, "max_likelihood", mag, self.B_relax, self.tau, mag_mask)

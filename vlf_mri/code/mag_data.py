@@ -20,14 +20,14 @@ from vlf_mri.code.vlf_data import VlfData
 
 class MagData(VlfData):
     def __init__(self, fid_file_path, algorithm, mag_matrix, B_relax, tau, mask=None, best_fit=None):
+        if best_fit is None:
+            best_fit = {}
         super().__init__(fid_file_path, "MAG", best_fit)
+
         self.algorithm = algorithm
-
         self.mag_matrix = mag_matrix
-
         self.B_relax = B_relax
         self.tau = tau
-
         self.mask = np.zeros_like(mag_matrix, dtype=bool) if mask is None else mask
 
         self._normalize()
@@ -47,6 +47,28 @@ class MagData(VlfData):
         output[output == 0.] = 1e-12  # Avoid errors with max_likelihood approaches
 
         self.mag_matrix = output
+
+    def __getitem__(self, item):
+        # Defines the slices objects used to slice through the objects
+        sl = []
+        if not isinstance(item, Iterable):  # 2D or 3D slices
+            item = (item,)
+        for it in item:
+            sl.append(it if isinstance(it, slice) else slice(it, it + 1))
+        while len(sl) < 2:
+            sl.append(slice(0, None))
+
+        sl = tuple(sl)
+
+        data_file_path = self.data_file_path
+        algorithm = self.algorithm
+        mag_matrix = self.mag_matrix[sl]
+        B_relax = self.B_relax[sl[0]]
+        tau = self.tau[sl]
+        mask = self.mask[sl]
+        best_fit = {key: value[sl] for key, value in self.best_fit.items()}
+
+        return MagData(data_file_path, algorithm, mag_matrix, B_relax, tau, mask, best_fit)
 
     def apply_mask(self, sigma=2., dims="xy", display_report=False) -> None:
         """ Mask aberrant values in mag_matrix

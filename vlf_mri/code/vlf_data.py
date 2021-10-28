@@ -5,7 +5,7 @@ from pathlib import Path
 
 class VlfData(ABC):
     def __init__(self, data_file_path, data_type, best_fit):
-        self.sdf_file_path = data_file_path
+        self.data_file_path = data_file_path
         self.experience_name = data_file_path.stem
         self.saving_folder = Path(data_file_path.parent) / ("result_" + self.experience_name)
         if not self.saving_folder.is_dir():
