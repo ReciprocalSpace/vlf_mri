@@ -16,6 +16,7 @@ from tqdm import tqdm
 
 from vlf_mri.code.pdf_saver import PDFSaver
 from vlf_mri.code.vlf_data import VlfData
+from vlf_mri.code.rel_data import RelData
 
 
 class MagData(VlfData):
@@ -170,56 +171,67 @@ class MagData(VlfData):
 
             self.batch_plot("Report: MAG after mask")
 
-
     @staticmethod
-    def model_mono_exp(tau, amp, R1):
+    def _model_mono_exp(tau, amp, R1):
         return amp * np.exp(-R1 * tau)
 
     @staticmethod
-    def model_bi_exp(tau, amp, alpha, R11, R12):
+    def _model_bi_exp(tau, amp, alpha, R11, R12):
         return amp * alpha * np.exp(-R11 * tau) + amp * (1 - alpha) * np.exp(-R12 * tau)
 
-    def adjust_mono_exp(self, tau, magnetization):
-        mod = Model(self.model_mono_exp, independent_vars=['tau'])
+    @staticmethod
+    def _fit_mono_exp(tau, mag, mask):
+        mod = Model(MagData._model_mono_exp, independent_vars=['tau'])
         params = Parameters()
-        R1 = 1 / tau[np.argmin(np.absolute(magnetization - 0.63))]
+        R1 = 1 / tau[np.argmin(np.absolute(mag - 0.63))]
         params.add('amp', value=1., min=0.)
         params.add('R1', value=R1, min=0)
-        ind = ~magnetization.mask
-        result_mono = mod.fit(magnetization[ind], params, tau=tau[ind])
-        result_mono.best_fit = self.model_mono_exp(tau,
-                                              result_mono.params['amp'].value,
-                                              result_mono.params['R1'].value)
+        ind = ~ mask
+        result_mono = mod.fit(mag[ind], params, tau=tau[ind])
+        result_mono.best_fit = MagData._model_mono_exp(tau, result_mono.params['amp'].value,
+                                                       result_mono.params['R1'].value)
         return result_mono
 
-    def to_rel_biexp(self, tau, magnetization):
-        mod = Model(self.model_bi_exp, independent_vars=['tau'])
+    @staticmethod
+    def _adjust_bi_exp(tau, mag, mask):
+        mod = Model(MagData._model_bi_exp, independent_vars=['tau'])
         params = Parameters()
-        R1 = 1 / tau[np.argmin(np.absolute(magnetization - 0.63))]
+        R1 = 1 / tau[np.argmin(np.absolute(mag - 0.63))]
         params.add('amp', value=1., min=0.8, max=1.2)
         params.add('alpha', value=0.5, min=0., max=1.)
         params.add('R11', value=R1, min=0, max=100)
         params.add('R12', value=R1 * 2, min=0, max=100)
-        ind = ~magnetization.mask
-        result_bi = mod.fit(magnetization[ind], params, tau=tau[ind])
-        # report_fit(result_bi)
-        result_bi.best_fit = self.model_bi_exp(tau,
-                                          result_bi.params['amp'].value,
-                                          result_bi.params['alpha'].value,
-                                          result_bi.params['R11'].value,
-                                          result_bi.params['R12'].value)
+        ind = ~mask
+        result_bi = mod.fit(mag[ind], params, tau=tau[ind])
+        result_bi.best_fit = MagData._model_bi_exp(tau, result_bi.params['amp'].value, result_bi.params['alpha'].value,
+                                                   result_bi.params['R11'].value, result_bi.params['R12'].value)
         return result_bi
 
-    def get_relaxation_times(self, tau, list_of_magnetization, save_folder="", manip_name=""):
+    def to_rel(self):
         result_mono = []
         result_bi = []
-        for tau_i, magnetization in zip(tau, list_of_magnetization):
-            result_mono.append(self.adjust_mono_exp(tau_i, magnetization))
-            result_bi.append(self.adjust_bi_exp(tau_i, magnetization))
+        for tau_i, mag_i, mask_i in zip(self.tau, self.mag_matrix, self.mask):
+            result_mono.append(self._fit_mono_exp(tau_i, mag_i, mask_i))
+            result_bi.append(self._adjust_bi_exp(tau_i, mag_i, mask_i))
 
-        if save_folder != "" and manip_name != "":
-            pass
-        return result_mono, result_bi
+        mono_best_fit = np.array([res_i.best_fit for res_i in result_mono])
+        bi_best_fit = np.array([res_i.best_fit for res_i in result_bi])
+
+        self.best_fit["mono_exp"] = mono_best_fit
+        self.best_fit["bi_exp"] = bi_best_fit
+
+        R1 = np.array([res_i.params['R1'] for res_i in result_mono])
+        R11 = np.array([res_i.params['R11'] for res_i in result_bi])
+        R12 = np.array([res_i.params['R11'] for res_i in result_bi])
+        alpha = np.array([res_i.params['alpha'] for res_i in result_bi])
+
+        rel_matrix = np.array((R1, R11, R12, alpha))
+
+        # mono_mask = np.array([[~res_i['success'] for res_i in result_mono]], dtype=bool)
+        # bi_mask = np.array([[~res_i['success'] for res_i in result_bi]], dtype=bool)
+        # rel_mask = np.append(mono_mask, bi_mask, bi_mask, bi_mask)
+
+        return RelData(self.data_file_path, rel_matrix, self.B_relax)  # rel_mask)
 
     def save_to_pdf(self, display):
         file_name = f"{self.experience_name}_Aimantation.pdf"

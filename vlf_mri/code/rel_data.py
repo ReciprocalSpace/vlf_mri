@@ -4,8 +4,29 @@ from vlf_mri.code.vlf_data import VlfData
 
 
 class RelData(VlfData):
-    def __init__(self, data_file_path, monoexp_results, biexp_results, B_relax):
-        super().__init__(data_file_path)
+    def __init__(self, data_file_path, rel_data, B_relax, mask=None, best_fit=None):
+        if best_fit is None:
+            best_fit = {}
+
+        super().__init__(data_file_path, "REL", best_fit)
+
+        self.rel_matrix = rel_data
+        self.B_relax = B_relax
+        self.mask = np.zeros_like(rel_data, dtype=bool) if mask is None else mask
+
+
+    def __str__(self):
+        output = ("-" * 16 + f'REPORT: REL data matrix' + "-" * 16 + "\n" +
+                  f"Data file path:             \t{self.data_file_path}\n" +
+                  f"Experience name:            \t{self.experience_name}\n" +
+                  f"Output save path:           \t{self.saving_folder}\n" +
+                  f"Champs evolution (B_relax): \t{len(self.B_relax)} champs étudiés entre {np.min(self.B_relax):.2e}" +
+                  f" et {np.max(self.B_relax):.2e} MHz\n"
+                  )
+        output += (f"Mask size:                  \t{np.sum(self.mask[0])+np.sum(self.mask[1]):,}/"+
+                   f"{2*self.rel_matrix.shape[1]:,} pts")
+        return output
+
 
     def plot_relaxation(self, result_ajust_mono, result_ajust_bi, B_relax, name_manip, folder):
         # Create the pdfsaver object
