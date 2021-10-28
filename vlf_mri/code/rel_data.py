@@ -1,4 +1,7 @@
 import numpy as np
+
+from pathlib import Path
+
 from vlf_mri.code.pdf_saver import PDFSaver
 from vlf_mri.code.vlf_data import VlfData
 
@@ -40,14 +43,12 @@ class RelData(VlfData):
         return output
 
     def batch_plot(self, title):
+        B_relax = self.B_relax
         # Create the pdfsaver object
-        file_name = f"{name_manip}_Relaxation.pdf"
-        file_path = os.path.join(folder, file_name)
+        file_name = f"{self.experience_name}_Relaxation.pdf"
+        file_path = self.saving_folder / file_name
         title = f"{name_manip} - Magnetization"
         pdf = PDFSaver(file_path, 1, 3, title, True)
-
-        # Prepare and sort the R1, R11, R12 and alpha data into arrays
-
 
         # First plot: R1, R11, R12 VS B_relax
         ax = pdf.get_ax()
