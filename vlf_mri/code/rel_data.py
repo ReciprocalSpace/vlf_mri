@@ -7,7 +7,8 @@ from vlf_mri.code.vlf_data import VlfData
 
 
 class RelData(VlfData):
-    def __init__(self, data_file_path, rel_data, B_relax, mask=None, best_fit=None):
+    def __init__(self, data_file_path: Path, rel_data: np.ndarray,
+                 B_relax:np.ndarray, mask=None, best_fit=None) -> None:
         if best_fit is None:
             best_fit = {}
 
@@ -19,7 +20,7 @@ class RelData(VlfData):
 
         self._reorder_R11_R12()
 
-    def _reorder_R11_R12(self):
+    def _reorder_R11_R12(self) -> None:
         R11_R12 = self.rel_matrix[1:3]
         alpha = self.rel_matrix[3]
 
@@ -42,20 +43,26 @@ class RelData(VlfData):
                    f"{2*self.rel_matrix.shape[1]:,} pts")
         return output
 
-    def batch_plot(self, title):
+    def save_to_pdf(self, fit_to_plot=None, display=False) -> None:
         B_relax = self.B_relax
+        R1 = self.rel_matrix[0]
+        R11 = self.rel_matrix[1]
+        R12 = self.rel_matrix[2]
+        alpha = self.rel_matrix[3]
+
         # Create the pdfsaver object
         file_name = f"{self.experience_name}_Relaxation.pdf"
         file_path = self.saving_folder / file_name
-        title = f"{name_manip} - Magnetization"
-        pdf = PDFSaver(file_path, 1, 3, title, True)
+        title = f"{self.experience_name} - Relaxation"
+
+        pdf = PDFSaver(file_path, 1, 3, title, display)
 
         # First plot: R1, R11, R12 VS B_relax
         ax = pdf.get_ax()
         ax.plot(B_relax, R1, '--d', c="darkviolet", label=r'$R_1$')
-        ax.plot(B_relax, R11_R12.T[0], '--*', c='b', label=r'$R_1^{(1)}$')
-        ax.plot(B_relax, R11_R12.T[1], '--*', c='#0081FE', label=r'$R_1^{(2)}$')
-        ax.grid('on')
+        ax.plot(B_relax, R11, '--*', c='b', label=r'$R_1^{(1)}$')
+        ax.plot(B_relax, R12, '--*', c='#0081FE', label=r'$R_1^{(2)}$')
+        ax.grid(True)
         ax.set_xscale('log')
         ax.set_yscale('log')
         ax.legend(loc='best')
@@ -63,9 +70,9 @@ class RelData(VlfData):
 
         # Second plot: alpha VS B_relax
         ax = pdf.get_ax()
-        ax.plot(B_relax, alpha_bi.T[0], '--*', c='b', label=r'$a_{bi}$')
-        ax.plot(B_relax, alpha_bi.T[1], '--*', c='#0081FE', label=r'($1-a_{bi}$)')
-        ax.grid('on')
+        ax.plot(B_relax, alpha, '--*', c='b', label=r'$a_{bi}$')
+        ax.plot(B_relax, 1-alpha, '--*', c='#0081FE', label=r'($1-a_{bi}$)')
+        ax.grid(True)
         ax.legend(loc='best')
         ax.set_xscale('log')
         ax.set_xlabel(r"$B_{relax}$  [MHz]")
@@ -73,6 +80,5 @@ class RelData(VlfData):
 
         pdf.close_pdf()
 
-        return R11_R12, alpha_bi
 
 

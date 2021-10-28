@@ -3,16 +3,12 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-from abc import ABC
 from collections.abc import Iterable
 from cycler import cycler
-from lmfit import Model, Parameters, report_fit
+from lmfit import Model, Parameters
 from math import ceil
 from numpy import ma
 from pathlib import Path
-from scipy.optimize import minimize
-from scipy.stats import rice
-from tqdm import tqdm
 
 from vlf_mri.code.pdf_saver import PDFSaver
 from vlf_mri.code.vlf_data import VlfData
@@ -20,7 +16,8 @@ from vlf_mri.code.rel_data import RelData
 
 
 class MagData(VlfData):
-    def __init__(self, fid_file_path, algorithm, mag_matrix, B_relax, tau, mask=None, best_fit=None):
+    def __init__(self, fid_file_path: Path, algorithm: str, mag_matrix: np.ndarray, B_relax:np.ndarray, tau:np.ndarray,
+                 mask=None, best_fit=None):
         if best_fit is None:
             best_fit = {}
         super().__init__(fid_file_path, "MAG", best_fit)
@@ -251,8 +248,10 @@ class MagData(VlfData):
             for key in fit_to_plot:
                 best_fit_keys.append(key) if key in self.best_fit else None
 
+        mag_matrix = ma.masked_array(self.mag_matrix, self.mask)
+
         pdf = PDFSaver(file_path, 2, 4, title, True)
-        for i, (tau_i, mag_i, B_relax_i) in enumerate(zip(self.tau, self.mag_matrix, self.B_relax)):
+        for i, (tau_i, mag_i, B_relax_i) in enumerate(zip(self.tau, mag_matrix, self.B_relax)):
             ax = pdf.get_ax()
             ax.set_xlabel('$tau$ u.a.', fontsize=8)
             ax.plot(tau_i, mag_i, '*', markersize=5,
