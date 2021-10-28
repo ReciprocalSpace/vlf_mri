@@ -16,7 +16,8 @@ from vlf_mri.code.rel_data import RelData
 
 
 class MagData(VlfData):
-    def __init__(self, fid_file_path: Path, algorithm: str, mag_matrix: np.ndarray, B_relax:np.ndarray, tau:np.ndarray,
+    def __init__(self, fid_file_path: Path, algorithm: str, mag_matrix: np.ndarray, B_relax: np.ndarray,
+                 tau: np.ndarray,
                  mask=None, best_fit=None):
         if best_fit is None:
             best_fit = {}
@@ -45,6 +46,8 @@ class MagData(VlfData):
         output[output == 0.] = 1e-12  # Avoid errors with max_likelihood approaches
 
         self.mag_matrix = output
+
+    # TODO Implement __repr__
 
     def __getitem__(self, item):
         # Defines the slices objects used to slice through the objects
@@ -188,7 +191,7 @@ class MagData(VlfData):
         result_mono = mod.fit(mag[ind], params, tau=tau[ind])
         result_mono.best_fit = MagData._model_mono_exp(tau, result_mono.params['amp'].value,
                                                        result_mono.params['C'].value,
-                                                       result_mono.params['R1'].value,)
+                                                       result_mono.params['R1'].value, )
         return result_mono
 
     @staticmethod
@@ -235,7 +238,7 @@ class MagData(VlfData):
         return RelData(self.data_file_path, rel_matrix, self.B_relax)  # rel_mask)
 
     def save_to_pdf(self, fit_to_plot=None, display=False):
-        file_name = f"{self.experience_name}_Aimantation.pdf"
+        file_name = f"{self.experience_name}_Magnetization.pdf"
         file_path = self.saving_folder / file_name
         title = f"{self.experience_name} - Magnetization"
 
@@ -275,7 +278,7 @@ class MagData(VlfData):
             ax.set_ylabel('Residu', fontsize=8)
             for algo in best_fit_keys:
                 fit = self.best_fit[algo]
-                ax.plot(tau_i, mag_i- fit[i], '*', lw=3, markersize=4)
+                ax.plot(tau_i, mag_i - fit[i], '*', lw=3, markersize=4)
 
             # ax.plot(tau_i, mag_i - mono_exp_i.best_fit, '*', c='tab:pink', markersize=4,
             #         label=r"$R_{1}$" + f"= {mono_exp_i.params['R1'].value:.2f}")
@@ -296,11 +299,10 @@ class MagData(VlfData):
         axes_1D = np.array(axes_2D).flatten()
 
         colormap = plt.cm.get_cmap("plasma")
-        costum_colors = cycler('color', [colormap(x) for x in np.linspace(0, 0.9, len(self.tau.T))])
+        custom_colors = cycler('color', [colormap(x) for x in np.linspace(0, 0.9, len(self.tau.T))])
 
-        # costum_cycler = cycler(color=[colormap(x) for x in np.linspace(0, 0.8, len(tau))])
         for i, ax in enumerate(axes_1D):
-            ax.set_prop_cycle(cycler('color', costum_colors))
+            ax.set_prop_cycle(cycler('color', custom_colors))
             if i < len(mag_data):
                 cst = np.max(np.absolute(mag_data[i]))
                 ax.plot(self.tau[i], mag_data[i] / cst, "--.")

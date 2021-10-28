@@ -31,6 +31,8 @@ class RelData(VlfData):
 
         self.rel_matrix[1:] = np.concatenate((R11_R12, alpha))
 
+    # TODO implement __repr__
+
     def __str__(self):
         output = ("-" * 16 + f'REPORT: REL data matrix' + "-" * 16 + "\n" +
                   f"Data file path:             \t{self.data_file_path}\n" +
@@ -79,6 +81,3 @@ class RelData(VlfData):
         ax.set_title('population')
 
         pdf.close_pdf()
-
-
-

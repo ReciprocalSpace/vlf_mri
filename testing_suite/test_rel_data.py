@@ -11,6 +11,7 @@ mag_data_mean.apply_mask(sigma=3)
 rel_data = mag_data_mean.to_rel()
 mag_data_mean.save_to_pdf()
 
+
 def test_str():
     global rel_data
     print(rel_data)
