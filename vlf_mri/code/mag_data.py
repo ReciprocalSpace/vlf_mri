@@ -22,7 +22,9 @@ class MagData(VlfData):
     def __init__(self, fid_file_path, algorithm, mag_matrix, B_relax, tau, mask=None, best_fit=None):
         super().__init__(fid_file_path, "MAG", best_fit)
         self.algorithm = algorithm
+
         self.mag_matrix = mag_matrix
+
         self.B_relax = B_relax
         self.tau = tau
 

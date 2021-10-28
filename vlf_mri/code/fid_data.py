@@ -1,3 +1,4 @@
+import lmfit
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -9,6 +10,7 @@ from pathlib import Path
 from scipy.optimize import minimize
 from scipy.stats import rice
 from tqdm import tqdm
+from typing import List
 
 from vlf_mri.code.pdf_saver import PDFSaver
 from vlf_mri.code.vlf_data import VlfData
@@ -16,7 +18,8 @@ from vlf_mri.code.mag_data import MagData
 
 
 class FidData(VlfData):
-    def __init__(self, fid_file_path: Path, fid_matrix, B_relax, tau, t_fid, mask=None, best_fit=None) -> None:
+    def __init__(self, fid_file_path: Path, fid_matrix:np.ndarray, B_relax:np.ndarray, tau:np.ndarray, t_fid:np.ndarray,
+                 mask=None, best_fit=None) -> None:
         if best_fit is None:
             best_fit = {}
 
@@ -50,7 +53,7 @@ class FidData(VlfData):
         tau = self.tau[sl[0:2]]
         t_fid = self.t_fid[sl[-1]]
         mask = self.mask[sl]
-        best_fit = {key: value(item)[sl] for key, value in self.best_fit}
+        best_fit = {key: value[sl] for key, value in self.best_fit.items()}
 
         return FidData(sdf_file_path, fid_matrix, B_relax, tau, t_fid, mask, best_fit)
 
@@ -308,7 +311,7 @@ class FidData(VlfData):
 
         return MagData(self.sdf_file_path, "intercept", intercept, self.B_relax, self.tau)
 
-    def max_likelihood(self) -> MagData:
+    def to_mag_max_likelihood(self) -> MagData:
         def likelihood(theta: list, *args):
             M_0, T2, sigma = theta
             t, noisy_signal = args
@@ -330,35 +333,42 @@ class FidData(VlfData):
             return out
 
         tau = self.tau
-        magnetization = []
+        mag = []
         best_fit = []
-        mask = []
-        for fid_i in self.fid_matrix:
-            magnetization_i = []
+        mag_mask = []
+        for fid_i, mask_i,  in zip(self.fid_matrix, self.mask):
+            mag_i = []
             best_fit_i = []
-            mask_i = []
-            for fid_ij in fid_i:
-                ind = ~self.mask
-                unmask_fid = fid_ij[ind]
-                # bounds = ((1, np.max(fid_ij)), (1e-6, None), (0, None)) # Pas appli
-                M_0 = np.mean(unmask_fid[:50])
-                sigma = unmask_fid[-30:].std() ** 2
-                T_2 = M_0 * (
-                        fid_ij.max() - fid_ij.min()) ** -1 / 2  # T2 = M0 / slope en zero (/2 juste pour le réduire un peu)
+            mag_mask_i = []
+            for fid_ij, mag_mask_ij in zip(fid_i, mask_i):
+                ind = ~ mag_mask_ij
+                fid = fid_ij[ind]
+                t_fid = self.t_fid[ind]
 
+                M_0 = np.mean(fid[:30])
+                sigma = fid[-30:].std() ** 2
+                T_2 = np.mean(t_fid[-30:]) / np.log(M_0/np.mean(t_fid[-30:]))
                 x0 = np.array([M_0, T_2, sigma])
-                result = minimize(likelihood, x0=x0, args=(tau[ind], unmask_fid + 1e-3), method='Nelder-Mead')
-                magnetization_i.append(result['x'][0])
-                best_fit_i.append(model(result['x'], tau))
+
+                result = minimize(likelihood, x0=x0, args=(self.t_fid[ind], fid + 1e-3), method='Nelder-Mead')
+                mag_i.append(result['x'][0])
+
+                best_fit_i.append(model(result['x'], self.t_fid))
+
                 data_point_to_be_mask = not result['success'] or not np.alltrue(result['x'] > 0.)
-                mask_i.append(data_point_to_be_mask)
+                mag_mask_i.append(data_point_to_be_mask)
 
-                if data_point_to_be_mask:
-                    print("DATA MASKED")
-                    print("x0", x0)
-                    print("x1", result["x"])
-            magnetization.append(magnetization_i)
+            mag.append(mag_i)
             best_fit.append(best_fit_i)
-            mask.append(mask_i)
+            mag_mask.append(mag_mask_i)
 
-        return ma.array(magnetization, mask=np.array(mask, dtype=bool)), np.array(best_fit)
+        mag = np.array(mag)
+        best_fit = np.array(best_fit)
+        mag_mask = np.array(mag_mask, dtype=bool)
+
+        best_mask = np.expand_dims(mag_mask, 2)
+        best_mask = np.tile(best_mask, (1,1,len(self.t_fid)))
+
+        self.best_fit["max_likelihood"] = ma.masked_array(best_fit, best_mask )
+
+        return MagData(self.sdf_file_path, "max_likelihood", mag, self.B_relax, self.tau, mag_mask)
