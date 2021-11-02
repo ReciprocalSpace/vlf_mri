@@ -13,6 +13,7 @@ from pathlib import Path
 from vlf_mri.code.pdf_saver import PDFSaver
 from vlf_mri.code.vlf_data import VlfData
 from vlf_mri.code.rel_data import RelData
+from vlf_mri.code.fit_data import FitDataArray, FitData
 
 
 class MagData(VlfData):
@@ -218,8 +219,25 @@ class MagData(VlfData):
             result_mono.append(self._fit_mono_exp(tau_i, mag_i, mask_i))
             result_bi.append(self._adjust_bi_exp(tau_i, mag_i, mask_i))
 
-        mono_best_fit = np.array([res_i.best_fit for res_i in result_mono])
-        bi_best_fit = np.array([res_i.best_fit for res_i in result_bi])
+        fit = []
+        for res_i in result_mono:
+            fit.append(FitData(res_i.best_fit,
+                               c='tab:pink',
+                               label=r"$R_{1}$" + f"= {res_i.params['R1'].value:.2f}"
+                               ))
+        mono_best_fit = FitDataArray(fit)
+
+        fit = []
+        for res_i in result_bi:
+            fit.append(FitData(res_i.best_fit,
+                               c='tab:olive',
+                               label=(r"$R_1^{(1)}$" + f"={res_i.params['R11'].value:.2f}\n"
+                                                       r"$R_1^{(2)}$" + f"={res_i.params['R12'].value:.2f}")
+                               ))
+        bi_best_fit = FitDataArray(fit)
+
+        # mono_best_fit = np.array([res_i.best_fit for res_i in result_mono])
+        # bi_best_fit = np.array([res_i.best_fit for res_i in result_bi])
 
         self.best_fit["mono_exp"] = mono_best_fit
         self.best_fit["bi_exp"] = bi_best_fit
@@ -261,8 +279,8 @@ class MagData(VlfData):
                     label=r"$B_{relax}$" + f" = {B_relax_i:.2e} MHz")
 
             for algo in best_fit_keys:
-                fit = self.best_fit[algo]
-                ax.plot(tau_i, fit[i], '--', markersize=1, lw=3)
+                fit = self.best_fit[algo][i]
+                ax.plot(tau_i, fit.data, '--', markersize=1, lw=3, **fit.plot_keywords)
 
             # ax.plot(tau_i, mono_exp_i.best_fit, '--', c='tab:pink', lw=3,
             #         label=r"$R_{1}$" + f"= {mono_exp_i.params['R1'].value:.2f}")
@@ -277,9 +295,9 @@ class MagData(VlfData):
             ax.set_xlabel('$tau$ u.a.', fontsize=8)
             ax.set_ylabel('Residu', fontsize=8)
             for algo in best_fit_keys:
-                fit = self.best_fit[algo]
-                ax.plot(tau_i, mag_i - fit[i], '*', lw=3, markersize=4)
-
+                fit = self.best_fit[algo][i]
+                ax.plot(tau_i, mag_i - fit.data, '*', lw=3, markersize=4, **fit.plot_keywords)
+            # ax.legend("best")
             # ax.plot(tau_i, mag_i - mono_exp_i.best_fit, '*', c='tab:pink', markersize=4,
             #         label=r"$R_{1}$" + f"= {mono_exp_i.params['R1'].value:.2f}")
             # ax.plot(tau_i, mag_i - bi_exp_i.best_fit, '*', c='tab:olive', markersize=4,

@@ -18,8 +18,8 @@ from vlf_mri.code.mag_data import MagData
 
 
 class FidData(VlfData):
-    def __init__(self, fid_file_path: Path, fid_matrix:np.ndarray, B_relax:np.ndarray, tau:np.ndarray, t_fid:np.ndarray,
-                 mask=None, best_fit=None) -> None:
+    def __init__(self, fid_file_path: Path, fid_matrix: np.ndarray, B_relax: np.ndarray, tau: np.ndarray,
+                 t_fid: np.ndarray, mask=None, best_fit=None) -> None:
         if best_fit is None:
             best_fit = {}
 
