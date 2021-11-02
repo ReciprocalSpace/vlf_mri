@@ -19,7 +19,7 @@ from vlf_mri.code.fit_data import FitDataArray, FitData
 class MagData(VlfData):
     def __init__(self, fid_file_path: Path, algorithm: str, mag_matrix: np.ndarray, B_relax: np.ndarray,
                  tau: np.ndarray,
-                 mask=None, best_fit=None):
+                 mask=None, best_fit=None, normalize=False):
         if best_fit is None:
             best_fit = {}
         super().__init__(fid_file_path, "MAG", best_fit)
@@ -30,7 +30,9 @@ class MagData(VlfData):
         self.tau = tau
         self.mask = np.zeros_like(mag_matrix, dtype=bool) if mask is None else mask
 
-        self._normalize()
+        if normalize:
+            self._normalize()
+
         self.mask = np.logical_or(self.mask, self.mag_matrix <= 0)
 
     def _normalize(self):
@@ -200,7 +202,7 @@ class MagData(VlfData):
         mod = Model(MagData._model_bi_exp, independent_vars=['tau'])
         params = Parameters()
         R1 = 1 / tau[np.argmin(np.absolute(mag - 0.63))]
-        params.add('amp', value=1., min=0.8, max=1.2)
+        params.add('amp', value=1., min=0.)
         params.add('alpha', value=0.5, min=0., max=1.)
         params.add('R11', value=R1, min=0)
         params.add('R12', value=R1 * 2, min=0)
@@ -219,6 +221,7 @@ class MagData(VlfData):
             result_mono.append(self._fit_mono_exp(tau_i, mag_i, mask_i))
             result_bi.append(self._adjust_bi_exp(tau_i, mag_i, mask_i))
 
+        # Create FitDataArray objects from the two models
         fit = []
         for res_i in result_mono:
             fit.append(FitData(res_i.best_fit,
@@ -236,12 +239,10 @@ class MagData(VlfData):
                                ))
         bi_best_fit = FitDataArray(fit)
 
-        # mono_best_fit = np.array([res_i.best_fit for res_i in result_mono])
-        # bi_best_fit = np.array([res_i.best_fit for res_i in result_bi])
-
         self.best_fit["mono_exp"] = mono_best_fit
         self.best_fit["bi_exp"] = bi_best_fit
 
+        # Format the model results to construct the Relaxo Data object
         R1 = np.array([res_i.params['R1'] for res_i in result_mono])
         R11 = np.array([res_i.params['R11'] for res_i in result_bi])
         R12 = np.array([res_i.params['R12'] for res_i in result_bi])
@@ -260,6 +261,7 @@ class MagData(VlfData):
         file_path = self.saving_folder / file_name
         title = f"{self.experience_name} - Magnetization"
 
+        # Process the fit_to_plot keywords list
         if fit_to_plot is None:
             best_fit_keys = self.best_fit.keys()
         elif isinstance(fit_to_plot, str):
@@ -282,11 +284,6 @@ class MagData(VlfData):
                 fit = self.best_fit[algo][i]
                 ax.plot(tau_i, fit.data, '--', markersize=1, lw=3, **fit.plot_keywords)
 
-            # ax.plot(tau_i, mono_exp_i.best_fit, '--', c='tab:pink', lw=3,
-            #         label=r"$R_{1}$" + f"= {mono_exp_i.params['R1'].value:.2f}")
-            # ax.plot(tau_i, bi_exp_i.best_fit, '--', c='tab:olive', lw=3,
-            #         label=(r"$R_1^{(1)}$" + f"={bi_exp_i.params['R11'].value:.2f}\n"
-            #                                 r"$R_1^{(2)}$" + f"={bi_exp_i.params['R12'].value:.2f}"))
             ax.legend(loc="lower left", fontsize='xx-small', handlelength=1, handletextpad=0.2)
             ax.set_xscale('log')
             ax.grid()
@@ -297,12 +294,6 @@ class MagData(VlfData):
             for algo in best_fit_keys:
                 fit = self.best_fit[algo][i]
                 ax.plot(tau_i, mag_i - fit.data, '*', lw=3, markersize=4, **fit.plot_keywords)
-            # ax.legend("best")
-            # ax.plot(tau_i, mag_i - mono_exp_i.best_fit, '*', c='tab:pink', markersize=4,
-            #         label=r"$R_{1}$" + f"= {mono_exp_i.params['R1'].value:.2f}")
-            # ax.plot(tau_i, mag_i - bi_exp_i.best_fit, '*', c='tab:olive', markersize=4,
-            #         label=(r"$R_1^{(1)}$" + f"={bi_exp_i.params['R11'].value:.2f}\n"
-            #                                 r"$R_1^{(2)}$" + f"={bi_exp_i.params['R12'].value:.2f}"))
             ax.set_xscale('log')
             ax.grid()
         pdf.close_pdf()

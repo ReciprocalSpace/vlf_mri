@@ -265,7 +265,7 @@ class FidData(VlfData):
 
         self.best_fit["mean"] = best_fit
 
-        return MagData(self.data_file_path, "mean", mean_mag, self.B_relax, self.tau)
+        return MagData(self.data_file_path, "mean", mean_mag, self.B_relax, self.tau, normalize=True)
 
     def to_mag_intercept(self, t_0=1., t_1=25.) -> MagData:
         fid_matrix = self.fid_matrix
@@ -309,7 +309,7 @@ class FidData(VlfData):
 
         intercept = b.reshape((nx, ny))
 
-        return MagData(self.data_file_path, "intercept", intercept, self.B_relax, self.tau)
+        return MagData(self.data_file_path, "intercept", intercept, self.B_relax, self.tau, normalize=True)
 
     def to_mag_max_likelihood(self) -> MagData:
         def likelihood(theta: list, *args):
@@ -371,4 +371,4 @@ class FidData(VlfData):
 
         self.best_fit["max_likelihood"] = ma.masked_array(best_fit, best_mask )
 
-        return MagData(self.data_file_path, "max_likelihood", mag, self.B_relax, self.tau, mag_mask)
+        return MagData(self.data_file_path, "max_likelihood", mag, self.B_relax, self.tau, mag_mask, normalize=True)
