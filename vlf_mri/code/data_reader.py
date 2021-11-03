@@ -57,6 +57,9 @@ def import_sdf_file(sdf_file_path: Path):
 
 def import_vlf_file(vlf_file_path: Path):
     vlf_file = open(vlf_file_path,  "rb")
-    vlf_data_object = pickle.load(vlf_file)
+    vlf_object = pickle.load(vlf_file)
     vlf_file.close()
-    return vlf_data_object
+
+    # TODO Upgrade old vlf_object to new version
+
+    return vlf_object

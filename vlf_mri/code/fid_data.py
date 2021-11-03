@@ -1,4 +1,3 @@
-import lmfit
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -10,7 +9,6 @@ from pathlib import Path
 from scipy.optimize import minimize
 from scipy.stats import rice
 from tqdm import tqdm
-from typing import List
 
 from vlf_mri.code.pdf_saver import PDFSaver
 from vlf_mri.code.vlf_data import VlfData

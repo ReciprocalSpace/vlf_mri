@@ -1,5 +1,4 @@
 import numpy as np
-
 from pathlib import Path
 
 from vlf_mri.code.pdf_saver import PDFSaver

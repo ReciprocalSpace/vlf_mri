@@ -1,5 +1,4 @@
 import pickle
-
 from abc import ABC
 from datetime import date
 from pathlib import Path
