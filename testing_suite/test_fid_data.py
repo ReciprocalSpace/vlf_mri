@@ -68,12 +68,12 @@ def test_fid_to_mag():
     fid_data.save_to_pdf(display=True)
 
 
-def test_save_data_to_file():
+def test_save_to_vlf():
     fid_data = vlf_mri.import_sdf_file(file)
     mag_data_mean = fid_data.to_mag_mean(t_0=5, t_1=50)
 
-    pickle_file_path = fid_data.save_data_to_file()
-    loaded_fid = vlf_mri.import_vlf_file(pickle_file_path)
+    vlf_file_path = fid_data.save_to_vlf()
+    loaded_fid = vlf_mri.import_vlf_file(vlf_file_path)
     print(loaded_fid)
 
 

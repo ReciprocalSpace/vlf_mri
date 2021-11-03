@@ -7,7 +7,7 @@ from vlf_mri.code.vlf_data import VlfData
 
 class RelData(VlfData):
     def __init__(self, data_file_path: Path, rel_data: np.ndarray,
-                 B_relax:np.ndarray, mask=None, best_fit=None) -> None:
+                 B_relax: np.ndarray, mask=None, best_fit=None) -> None:
         if best_fit is None:
             best_fit = {}
 

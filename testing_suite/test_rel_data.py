@@ -22,6 +22,14 @@ def test_save_to_pdf():
     rel_data.save_to_pdf(display=True)
 
 
+def test_save_to_vlf():
+    global rel_data
+    vlf_file_path = rel_data.save_to_vlf()
+    loaded_rel = vlf_mri.import_vlf_file(vlf_file_path)
+    print(loaded_rel)
+
+
 if __name__ == "__main__":
-    test_str()
-    test_save_to_pdf()
+    # test_str()
+    # test_save_to_pdf()
+    test_save_to_vlf()

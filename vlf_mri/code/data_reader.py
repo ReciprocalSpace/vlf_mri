@@ -57,9 +57,26 @@ def import_sdf_file(sdf_file_path: Path):
 
 def import_vlf_file(vlf_file_path: Path):
     vlf_file = open(vlf_file_path,  "rb")
-    vlf_object = pickle.load(vlf_file)
+    old_vlf_object = pickle.load(vlf_file)
     vlf_file.close()
 
-    # TODO Upgrade old vlf_object to new version
+    data_file_path = old_vlf_object.data_file_path
+    data_type = old_vlf_object.data_type
+    mask = old_vlf_object.mask
+    best_fit = old_vlf_object.best_fit
 
-    return vlf_object
+    B_relax = old_vlf_object.B_relax
+    if data_type == "REL":
+        rel_matrix = old_vlf_object.rel_matrix
+        return vlf_mri.RelData(data_file_path, rel_matrix, B_relax, mask, best_fit)
+
+    tau = old_vlf_object.tau
+    if data_type == "MAG":
+        mag_matrix = old_vlf_object.mag_matrix
+        algo = old_vlf_object.algorithm
+        return vlf_mri.MagData(data_file_path, algo, mag_matrix, B_relax, tau, mask, best_fit)
+
+    t_fid = old_vlf_object.t_fid
+    if data_type == "FID":
+        fid_matrix = old_vlf_object.fid_matrix
+        return vlf_mri.FidData(data_file_path, fid_matrix, B_relax, tau, t_fid, mask, best_fit)

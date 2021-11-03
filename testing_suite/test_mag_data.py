@@ -51,10 +51,21 @@ def test_save_to_pdf():
     # mag_data_mean.save_to_pdf(display=True)
 
 
+def test_save_to_vlf():
+    global mag_data_mean
+    mag_data_mean.apply_mask(sigma=3, display_report=False)
+    rel_data = mag_data_mean.to_rel()
+
+    vlf_file_path = mag_data_mean.save_to_vlf()
+    loaded_mag = vlf_mri.import_vlf_file(vlf_file_path)
+    print(loaded_mag)
+
+
 if __name__=="__main__":
     # test_batch_plot()
     # test_apply_mask()
-    test_slicing()
+    # test_slicing()
     # test_to_string()
     # test_to_rel()
     # test_save_to_pdf()
+    test_save_to_vlf()
