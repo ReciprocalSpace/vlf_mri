@@ -63,16 +63,16 @@ def test_fid_to_mag():
     mag_data_intercept = fid_data.to_mag_intercept()
     mag_data_mean.batch_plot("Mean")
     mag_data_intercept.batch_plot("Intercept")
-    mag_data_likelihood = fid_data.to_mag_max_likelihood()
-    mag_data_likelihood.batch_plot()
-    # fid_data.save_to_pdf(display=True)
+    # mag_data_likelihood = fid_data.to_mag_max_likelihood()
+    # mag_data_likelihood.batch_plot()
+    fid_data.save_to_pdf(display=True)
 
 
 if __name__ == "__main__":
-    test_import_SDF_file()
-    test_print_repr()
-    test_indexing()
-    test_apply_mask()
-    test_save_to_pdf()
+    # test_import_SDF_file()
+    # test_print_repr()
+    # test_indexing()
+    # test_apply_mask()
+    # test_save_to_pdf()
     test_fid_to_mag()
 

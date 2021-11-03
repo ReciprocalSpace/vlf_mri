@@ -15,6 +15,7 @@ from typing import List
 from vlf_mri.code.pdf_saver import PDFSaver
 from vlf_mri.code.vlf_data import VlfData
 from vlf_mri.code.mag_data import MagData
+from vlf_mri.code.fit_data import FitData
 
 
 class FidData(VlfData):
@@ -244,7 +245,9 @@ class FidData(VlfData):
 
                 for algo in best_fit_keys:
                     fit = self.best_fit[algo]
-                    ax.plot(self.t_fid, fit[i, j], '.r', markersize=1, label=algo)
+                    fit_data = fit[i, j]
+                    ax.plot(self.t_fid, ma.masked_array(fit_data.data, fit_data.mask), '.r', markersize=1,
+                            **fit_data.plot_keywords)
                 ax.legend(loc="lower left", fontsize=8, handlelength=0.5, handletextpad=0.2)
                 ax.grid()
             pdf_saver.close_pdf()
@@ -261,9 +264,11 @@ class FidData(VlfData):
         mask = np.ones_like(self.fid_matrix, dtype=bool)
         mask[:, :, index_min:index_max] = False
 
-        best_fit = ma.array(best_fit, mask=mask)
+        fit_data = FitData(best_fit, mask, label=f"Mean")
 
-        self.best_fit["mean"] = best_fit
+        # best_fit = ma.array(best_fit, mask=mask)
+
+        self.best_fit["mean"] = fit_data
 
         return MagData(self.data_file_path, "mean", mean_mag, self.B_relax, self.tau, normalize=True)
 
@@ -298,14 +303,14 @@ class FidData(VlfData):
         best_fit = []
         for a_i, b_i in zip(a, b):
             best_fit.append(X * a_i + b_i)
-
+        best_fit = np.array(best_fit)
         mask = np.ones(fid_matrix.shape[-1], dtype=bool)
         mask[index_min:index_max] = False
         mask = np.tile(mask, (*fid_matrix.shape[0:2], 1))
-        best_fit = ma.masked_array(best_fit, mask=mask)
         best_fit = best_fit.reshape(fid_matrix.shape)
+        fit_data = FitData(best_fit, mask, label="intercept")
 
-        self.best_fit["intercept"] = best_fit
+        self.best_fit["intercept"] = fit_data
 
         intercept = b.reshape((nx, ny))
 
@@ -367,8 +372,9 @@ class FidData(VlfData):
         mag_mask = np.array(mag_mask, dtype=bool)
 
         best_mask = np.expand_dims(mag_mask, 2)
-        best_mask = np.tile(best_mask, (1,1,len(self.t_fid)))
+        best_mask = np.tile(best_mask, (1, 1, len(self.t_fid)))
+        fit_data = FitData(best_fit, best_mask, label="max likelihood")
 
-        self.best_fit["max_likelihood"] = ma.masked_array(best_fit, best_mask )
+        self.best_fit["max_likelihood"] = fit_data
 
         return MagData(self.data_file_path, "max_likelihood", mag, self.B_relax, self.tau, mag_mask, normalize=True)
