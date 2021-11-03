@@ -1,11 +1,13 @@
-import vlf_mri
 import numpy as np
+import pickle
+
 from pathlib import Path
-import logging
+
+import vlf_mri
 
 
-def import_SDF_file(sdf_file_path: Path):
-    logging.info(f"Importing datafile: {sdf_file_path}")
+def import_sdf_file(sdf_file_path: Path):
+    print(f"Importing datafile: {sdf_file_path}")
     with open(sdf_file_path, 'r') as datafile:
         list_of_lines_in_sdf_file = datafile.readlines()
 
@@ -51,3 +53,10 @@ def import_SDF_file(sdf_file_path: Path):
     fid_matrix = np.array(raw_data).reshape(fid_matrix_shape)
 
     return vlf_mri.FidData(sdf_file_path, fid_matrix, B_relax, tau, t_fid)
+
+
+def import_vlf_file(vlf_file_path: Path):
+    vlf_file = open(vlf_file_path,  "rb")
+    vlf_data_object = pickle.load(vlf_file)
+    vlf_file.close()
+    return vlf_data_object
