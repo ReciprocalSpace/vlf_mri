@@ -8,27 +8,24 @@ from vlf_mri.code.vlf_data import VlfData
 class RelData(VlfData):
     def __init__(self, data_file_path: Path, rel_data: np.ndarray,
                  B_relax: np.ndarray, mask=None, best_fit=None) -> None:
-        if best_fit is None:
-            best_fit = {}
 
-        super().__init__(data_file_path, "REL", best_fit)
+        super().__init__(data_file_path, "REL", rel_data, mask, best_fit)
 
-        self.rel_matrix = rel_data
+        self.data = rel_data
         self.B_relax = B_relax
-        self.mask = np.zeros_like(rel_data, dtype=bool) if mask is None else mask
 
         self._reorder_R11_R12()
 
     def _reorder_R11_R12(self) -> None:
-        R11_R12 = self.rel_matrix[1:3]
-        alpha = self.rel_matrix[3]
+        R11_R12 = self.data[1:3]
+        alpha = self.data[3]
 
         ind = np.argsort(R11_R12, axis=0)
         R11_R12 = np.sort(R11_R12, axis=0)
 
         alpha = np.array([[a_i if ind_i == 0 else 1-a_i for a_i, ind_i in zip(alpha, ind[0])]])
 
-        self.rel_matrix[1:] = np.concatenate((R11_R12, alpha))
+        self.data[1:] = np.concatenate((R11_R12, alpha))
 
     # TODO implement __repr__
 
@@ -40,16 +37,16 @@ class RelData(VlfData):
                   f"Champs evolution (B_relax): \t{len(self.B_relax)} champs étudiés entre {np.min(self.B_relax):.2e}" +
                   f" et {np.max(self.B_relax):.2e} MHz\n"
                   )
-        output += (f"Mask size:                  \t{np.sum(self.mask[0])+np.sum(self.mask[1]):,}/"+
-                   f"{2*self.rel_matrix.shape[1]:,} pts")
+        output += (f"Mask size:                  \t{np.sum(self.mask[0])+np.sum(self.mask[1]):,}/" +
+                   f"{2*self.data.shape[1]:,} pts")
         return output
 
     def save_to_pdf(self, fit_to_plot=None, display=False) -> None:
         B_relax = self.B_relax
-        R1 = self.rel_matrix[0]
-        R11 = self.rel_matrix[1]
-        R12 = self.rel_matrix[2]
-        alpha = self.rel_matrix[3]
+        R1 = self.data[0]
+        R11 = self.data[1]
+        R12 = self.data[2]
+        alpha = self.data[3]
 
         # Create the pdfsaver object
         file_name = f"{self.experience_name}_Relaxation.pdf"

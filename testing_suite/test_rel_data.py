@@ -30,6 +30,6 @@ def test_save_to_vlf():
 
 
 if __name__ == "__main__":
-    # test_str()
-    # test_save_to_pdf()
+    test_str()
+    test_save_to_pdf()
     test_save_to_vlf()

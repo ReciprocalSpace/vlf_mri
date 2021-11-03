@@ -78,11 +78,11 @@ def test_save_to_vlf():
 
 
 if __name__ == "__main__":
-    # test_import_SDF_file()
-    # test_print_repr()
-    # test_indexing()
-    # test_apply_mask()
-    # test_save_to_pdf()
-    # test_fid_to_mag()
-    test_save_data_to_file()
+    test_import_SDF_file()
+    test_print_repr()
+    test_indexing()
+    test_apply_mask()
+    test_save_to_pdf()
+    test_fid_to_mag()
+    test_save_to_vlf()
 

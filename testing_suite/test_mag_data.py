@@ -62,10 +62,10 @@ def test_save_to_vlf():
 
 
 if __name__=="__main__":
-    # test_batch_plot()
-    # test_apply_mask()
-    # test_slicing()
-    # test_to_string()
-    # test_to_rel()
-    # test_save_to_pdf()
+    test_batch_plot()
+    test_apply_mask()
+    test_slicing()
+    test_to_string()
+    test_to_rel()
+    test_save_to_pdf()
     test_save_to_vlf()

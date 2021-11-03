@@ -38,13 +38,13 @@ Created on Wed Oct 13 09:52:07 2021
 #         save_folder.mkdir()
 #
 #     # FID_matrix
-#     B_relax, tau, t_fid, fid_matrix = import_SDF_file(sdf_file_path, True)
-#     fid_matrix = apply_mask(fid_matrix, mask_filter_criterion, True, B_relax, tau, t_fid)
+#     B_relax, tau, t_fid, data = import_SDF_file(sdf_file_path, True)
+#     data = apply_mask(data, mask_filter_criterion, True, B_relax, tau, t_fid)
 #
 #     # MAGNETIZATION
-#     magnetization_mean, best_fit_fid_mean = get_normalized_magnetization(mean_magnetization, fid_matrix, 4, 128)
+#     magnetization_mean, best_fit_fid_mean = get_normalized_magnetization(mean_magnetization, data, 4, 128)
 #
-#     for B_i, tau_i, fid_matrix_i, best_fit_fid_i in zip(B_relax, tau, fid_matrix, best_fit_fid_mean):
+#     for B_i, tau_i, fid_matrix_i, best_fit_fid_i in zip(B_relax, tau, data, best_fit_fid_mean):
 #         save_fid_to_pdf(B_i, tau_i, t_fid, fid_matrix_i, best_fit_fid_i, experience_name, save_folder)
 #
 #     # RELAXATION TIMES

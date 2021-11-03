@@ -41,13 +41,13 @@ class TestingSuite:
 
         # Calcul des aimantations: 3 approches différentes
         magnetization_mean, best_fit_mean = get_normalized_magnetization(mean_magnetization, fid_matrix, 5, 150)
-        # magnetization_intersect, best_fit_intersect = get_normalized_magnetization(intersect_magnetization, fid_matrix, 5, 150)
-        # magnetization_maxlikelihood, best_fit_maxlikelihood = get_normalized_magnetization(max_likelihood, fid_matrix)
+        # magnetization_intersect, best_fit_intersect = get_normalized_magnetization(intersect_magnetization, data, 5, 150)
+        # magnetization_maxlikelihood, best_fit_maxlikelihood = get_normalized_magnetization(max_likelihood, data)
 
         # Enregistrement des FID en pdf avec les courbes pour l'évaluation des aimantations
-        # save_fid_to_pdf(B_relax[0], tau[0], t_fid, fid_matrix[0], best_fit_mean[0], "sang-0p5C-mean", folder_manip)
-        # save_fid_to_pdf(B_relax[0], tau[0], t_fid, fid_matrix[0], best_fit_intersect[0], "sang-0p5C-intersect", folder_manip)
-        # save_fid_to_pdf(B_relax[0], tau[0], t_fid, fid_matrix[0], best_fit_maxlikelihood[0], "sang-0p5C-likelihood",
+        # save_fid_to_pdf(B_relax[0], tau[0], t_fid, data[0], best_fit_mean[0], "sang-0p5C-mean", folder_manip)
+        # save_fid_to_pdf(B_relax[0], tau[0], t_fid, data[0], best_fit_intersect[0], "sang-0p5C-intersect", folder_manip)
+        # save_fid_to_pdf(B_relax[0], tau[0], t_fid, data[0], best_fit_maxlikelihood[0], "sang-0p5C-likelihood",
         #                 folder_manip)
 
         # Calcul des temps de relaxation

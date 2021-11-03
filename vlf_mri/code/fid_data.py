@@ -17,18 +17,16 @@ from vlf_mri.code.fit_data import FitData
 
 
 class FidData(VlfData):
-    def __init__(self, fid_file_path: Path, fid_matrix: np.ndarray, B_relax: np.ndarray, tau: np.ndarray,
+    def __init__(self, fid_file_path: Path, fid_data: np.ndarray, B_relax: np.ndarray, tau: np.ndarray,
                  t_fid: np.ndarray, mask=None, best_fit=None) -> None:
+
+        if mask is None:
+            mask = np.zeros_like(fid_data, dtype=bool)
+
         if best_fit is None:
             best_fit = {}
 
-        super().__init__(fid_file_path, "FID", best_fit)
-
-        self.fid_matrix = fid_matrix
-        if mask is None:
-            self.mask = np.zeros_like(fid_matrix, dtype=bool)
-        else:
-            self.mask = mask
+        super().__init__(fid_file_path, "FID", fid_data, mask, best_fit)
 
         self.B_relax = B_relax
         self.tau = tau
@@ -47,7 +45,7 @@ class FidData(VlfData):
         sl = tuple(sl)
 
         data_file_path = self.data_file_path
-        fid_matrix = self.fid_matrix[sl]
+        fid_matrix = self.data[sl]
         B_relax = self.B_relax[sl[0]]
         tau = self.tau[sl[0:2]]
         t_fid = self.t_fid[sl[-1]]
@@ -62,8 +60,8 @@ class FidData(VlfData):
                   f"Experience name:            \t{self.experience_name}\n" +
                   f"Output save path:           \t{self.saving_folder}\n" +
                   "Total fid matrix size:       \t" +
-                  f"({self.fid_matrix.shape[0]} x {self.fid_matrix.shape[1]} x {self.fid_matrix.shape[2]}) " +
-                  f"ou {np.prod(self.fid_matrix.shape):,} points\n" +
+                  f"({self.data.shape[0]} x {self.data.shape[1]} x {self.data.shape[2]}) " +
+                  f"ou {np.prod(self.data.shape):,} points\n" +
                   f"Champs evolution (B_relax): \t{len(self.B_relax)} champs étudiés entre {np.min(self.B_relax):.2e} " +
                   f"et {np.max(self.B_relax):.2e} MHz\n" +
                   f"Temps evolution (tau):      \t{self.tau.shape[1]} pts par champ d evolution\n"
@@ -71,16 +69,16 @@ class FidData(VlfData):
 
         for i, (B_i, tau_i) in enumerate(zip(self.B_relax, self.tau)):
             output += f"\t\t\t{i + 1}) B_relax={B_i:2.2e} MHz\t\ttau: [{tau_i.min():.2e} à {tau_i.max():.2e}] ms\n"
-        output += (f"Signal ind libre (FID):     \t{self.fid_matrix.shape[-1]} pts espacés de " +
+        output += (f"Signal ind libre (FID):     \t{self.data.shape[-1]} pts espacés de " +
                    f"{self.t_fid[1] - self.t_fid[0]:.2e} us par FID\n")
-        output += f"Mask size:                  \t{np.sum(self.mask):,}/{np.prod(self.fid_matrix.shape):,} pts"
+        output += f"Mask size:                  \t{np.sum(self.mask):,}/{np.prod(self.data.shape):,} pts"
         return output
 
     def __repr__(self):
-        return f"vlf_mri.FidData(Path('{self.data_file_path}'), fid_matrix, B_relax, tau, t_fid, mask, best_fit)"
+        return f"vlf_mri.FidData(Path('{self.data_file_path}'), data, B_relax, tau, t_fid, mask, best_fit)"
 
     def apply_mask(self, sigma=2., dims="xyz", display_report=False) -> None:
-        """ Mask aberrant values in fid_matrix
+        """ Mask aberrant values in data
 
         Find and mask aberrant values in the fid data matrix. Aberrant values are defined as either negative values
         or discontinuities in the signal. Discontinuities in the data are found by evaluating the normalized gradient
@@ -106,10 +104,10 @@ class FidData(VlfData):
         :param dims:
         """
         # Apply a mask aberrant data
-        ind = self.fid_matrix <= 0.
+        ind = self.data <= 0.
         self.mask[ind] = True
 
-        grad = np.array(np.gradient(self.fid_matrix))
+        grad = np.array(np.gradient(self.data))
         # Normalize gradient array
         axis = (1, 2, 3)
         grad_mean = np.expand_dims(grad.mean(axis=axis), axis=axis)
@@ -125,7 +123,7 @@ class FidData(VlfData):
         self.mask = np.logical_or(self.mask, grad_n > sigma)
 
         if display_report:
-            fid_matrix = ma.masked_array(self.fid_matrix, mask=self.mask)
+            fid_matrix = ma.masked_array(self.data, mask=self.mask)
             fig, (axes_bef, axes_after) = plt.subplots(2, 4, tight_layout=True, figsize=(15 / 2.54, 10 / 2.54))
 
             fig.suptitle("Report: Apply mask")
@@ -184,7 +182,7 @@ class FidData(VlfData):
             self.batch_plot("Report: FID after mask")
 
     def batch_plot(self, suptitle="") -> None:
-        fid_matrix = ma.masked_array(self.fid_matrix, self.mask)
+        fid_matrix = ma.masked_array(self.data, self.mask)
         n_fig = len(self.B_relax)
         n_rows, n_columns = ceil(n_fig / 3), 3
         fig, axes_2D = plt.subplots(n_rows, n_columns, sharex='all', sharey="all",
@@ -226,7 +224,7 @@ class FidData(VlfData):
             for key in fit_to_plot:
                 best_fit_keys.append(key) if key in self.best_fit else None
 
-        fid_matrix = ma.masked_array(self.fid_matrix, self.mask)
+        fid_matrix = ma.masked_array(self.data, self.mask)
         for i, (B_relax_i, tau_i, fid_i) in enumerate(zip(self.B_relax, self.tau, fid_matrix)):
             file_name = f"{self.experience_name}_FID_{int(B_relax_i)}-{int((B_relax_i % 1) * 1000):03}MHz.pdf"
             file_path = self.saving_folder / file_name
@@ -254,12 +252,12 @@ class FidData(VlfData):
         index_min = np.argmin(np.absolute((self.t_fid - t_0)))
         index_max = np.argmin(np.absolute((self.t_fid - t_1)))
 
-        mean_mag = np.mean(self.fid_matrix[:, :, index_min:index_max], axis=2)
+        mean_mag = np.mean(self.data[:, :, index_min:index_max], axis=2)
 
         best_fit = np.expand_dims(mean_mag, axis=2)
         best_fit = np.tile(best_fit, (1, 1, len(self.t_fid)))
 
-        mask = np.ones_like(self.fid_matrix, dtype=bool)
+        mask = np.ones_like(self.data, dtype=bool)
         mask[:, :, index_min:index_max] = False
 
         fit_data = FitData(best_fit, mask, label=f"Mean")
@@ -271,13 +269,13 @@ class FidData(VlfData):
         return MagData(self.data_file_path, "mean", mean_mag, self.B_relax, self.tau, normalize=True)
 
     def to_mag_intercept(self, t_0=1., t_1=25.) -> MagData:
-        fid_matrix = self.fid_matrix
+        fid_matrix = self.data
         mask = self.mask
 
         index_min = np.argmin(np.absolute((self.t_fid - t_0)))
         index_max = np.argmin(np.absolute((self.t_fid - t_1)))
 
-        shape = self.fid_matrix.shape
+        shape = self.data.shape
         nx, ny, nz = shape
 
         len_fid = index_max - index_min
@@ -339,7 +337,7 @@ class FidData(VlfData):
         mag = []
         best_fit = []
         mag_mask = []
-        for fid_i, mask_i,  in zip(self.fid_matrix, self.mask):
+        for fid_i, mask_i,  in zip(self.data, self.mask):
             mag_i = []
             best_fit_i = []
             mag_mask_i = []

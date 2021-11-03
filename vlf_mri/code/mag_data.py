@@ -17,28 +17,24 @@ from vlf_mri.code.fit_data import FitDataArray, FitData
 
 
 class MagData(VlfData):
-    def __init__(self, fid_file_path: Path, algorithm: str, mag_matrix: np.ndarray, B_relax: np.ndarray,
-                 tau: np.ndarray,
-                 mask=None, best_fit=None, normalize=False):
-        if best_fit is None:
-            best_fit = {}
-        super().__init__(fid_file_path, "MAG", best_fit)
+    def __init__(self, fid_file_path: Path, algorithm: str, mag_data: np.ndarray, B_relax: np.ndarray,
+                 tau: np.ndarray, mask=None, best_fit=None, normalize=False):
+
+        super().__init__(fid_file_path, "MAG", mag_data, mask, best_fit)
 
         self.algorithm = algorithm
-        self.mag_matrix = mag_matrix
         self.B_relax = B_relax
         self.tau = tau
-        self.mask = np.zeros_like(mag_matrix, dtype=bool) if mask is None else mask
 
         if normalize:
             self._normalize()
 
-        self.mask = np.logical_or(self.mask, self.mag_matrix <= 0)
+        self.update_mask(self.data <= 0)
 
     def _normalize(self):
         output = []
 
-        for mag_matrix_i, mask_i in zip(self.mag_matrix, self.mask):
+        for mag_matrix_i, mask_i in zip(self.data, self.mask):
             unmask_data = mag_matrix_i[~mask_i]
             cond = unmask_data[0] < unmask_data[-1]
             m0 = unmask_data.min() if cond else unmask_data.max()
@@ -48,7 +44,7 @@ class MagData(VlfData):
         output = np.array(output)
         output[output == 0.] = 1e-12  # Avoid errors with max_likelihood approaches
 
-        self.mag_matrix = output
+        self.data = output
 
     # TODO Implement __repr__
 
@@ -66,7 +62,7 @@ class MagData(VlfData):
 
         data_file_path = self.data_file_path
         algorithm = self.algorithm
-        mag_matrix = self.mag_matrix[sl]
+        mag_matrix = self.data[sl]
         B_relax = self.B_relax[sl[0]]
         tau = self.tau[sl]
         mask = self.mask[sl]
@@ -79,19 +75,19 @@ class MagData(VlfData):
                   f"Data file path:             \t{self.data_file_path}\n" +
                   f"Experience name:            \t{self.experience_name}\n" +
                   f"Output save path:           \t{self.saving_folder}\n" +
-                  "Total mag matrix size:       \t({self.mag_matrix.shape[0]} x {self.mag_matrix.shape[1]}) " +
-                  f"ou {np.prod(self.mag_matrix.shape):,} points\n" +
+                  f"Total mag matrix size:       \t({self.data.shape[0]} x {self.data.shape[1]}) " +
+                  f"ou {np.prod(self.data.shape):,} points\n" +
                   f"Champs evolution (B_relax): \t{len(self.B_relax)} champs étudiés entre {np.min(self.B_relax):.2e}" +
                   f" et {np.max(self.B_relax):.2e} MHz\n" +
                   f"Temps evolution (tau):      \t{self.tau.shape[1]} pts par champ d evolution\n"
                   )
         for i, (B_i, tau_i) in enumerate(zip(self.B_relax, self.tau)):
             output += f"\t\t\t{i + 1}) B_relax={B_i:2.2e} MHz\t\ttau: [{tau_i.min():.2e} à {tau_i.max():.2e}] ms\n"
-        output += f"Mask size:                  \t{np.sum(self.mask):,}/{np.prod(self.mag_matrix.shape):,} pts"
+        output += f"Mask size:                  \t{np.sum(self.mask):,}/{np.prod(self.data.shape):,} pts"
         return output
 
     def apply_mask(self, sigma=2., dims="xy", display_report=False) -> None:
-        """ Mask aberrant values in mag_matrix
+        """ Mask aberrant values in data
 
         Find and mask aberrant values in the fid data matrix. Aberrant values are defined as either negative values
         or discontinuities in the signal. Discontinuities in the data are found by evaluating the normalized gradient
@@ -117,10 +113,10 @@ class MagData(VlfData):
         :param dims:
         """
         # Apply a mask aberrant data
-        ind = self.mag_matrix <= 0.
+        ind = self.data <= 0.
         self.mask[ind] = True
 
-        grad = np.array(np.gradient(self.mag_matrix))
+        grad = np.array(np.gradient(self.data))
         # Normalize gradient array
         axis = (1, 2)
         grad_mean = np.expand_dims(grad.mean(axis=axis), axis=axis)
@@ -135,7 +131,7 @@ class MagData(VlfData):
         self.mask = np.logical_or(self.mask, grad_n > sigma)
 
         if display_report:
-            mag_matrix = ma.masked_array(self.mag_matrix, mask=self.mask)
+            mag_matrix = ma.masked_array(self.data, mask=self.mask)
             fig, (axes_bef, axes_after) = plt.subplots(2, 2, tight_layout=True, figsize=(15 / 2.54, 10 / 2.54))
 
             fig.suptitle("Report: Apply mask")
@@ -217,7 +213,7 @@ class MagData(VlfData):
     def to_rel(self):
         result_mono = []
         result_bi = []
-        for tau_i, mag_i, mask_i in zip(self.tau, self.mag_matrix, self.mask):
+        for tau_i, mag_i, mask_i in zip(self.tau, self.data, self.mask):
             result_mono.append(self._fit_mono_exp(tau_i, mag_i, mask_i))
             result_bi.append(self._adjust_bi_exp(tau_i, mag_i, mask_i))
 
@@ -271,7 +267,7 @@ class MagData(VlfData):
             for key in fit_to_plot:
                 best_fit_keys.append(key) if key in self.best_fit else None
 
-        mag_matrix = ma.masked_array(self.mag_matrix, self.mask)
+        mag_matrix = ma.masked_array(self.data, self.mask)
 
         pdf = PDFSaver(file_path, 2, 4, title, True)
         for i, (tau_i, mag_i, B_relax_i) in enumerate(zip(self.tau, mag_matrix, self.B_relax)):
@@ -299,7 +295,7 @@ class MagData(VlfData):
         pdf.close_pdf()
 
     def batch_plot(self, suptitle="") -> None:
-        mag_data = ma.masked_array(self.mag_matrix, self.mask)
+        mag_data = ma.masked_array(self.data, self.mask)
         n_fig = len(self.B_relax)
         n_rows, n_columns = ceil(n_fig / 3), 3
         fig, axes_2D = plt.subplots(n_rows, n_columns, sharey="all",

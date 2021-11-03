@@ -40,7 +40,7 @@ def import_sdf_file(sdf_file_path: Path):
         else:
             flag_data = False
 
-    # Format outputs: B_relax, tau, t_fid, fid_matrix
+    # Format outputs: B_relax, tau, t_fid, data
     B_relax = np.array(B_relax)
     if flag_log[0]:
         tau = np.array([tau_0 * np.logspace(0., 1., len_tau[0], base=tau_1 / tau_0)
@@ -60,23 +60,23 @@ def import_vlf_file(vlf_file_path: Path):
     old_vlf_object = pickle.load(vlf_file)
     vlf_file.close()
 
+    # Update object to a newer version of import VlfData class
     data_file_path = old_vlf_object.data_file_path
     data_type = old_vlf_object.data_type
     mask = old_vlf_object.mask
     best_fit = old_vlf_object.best_fit
 
+    vlf_data = old_vlf_object.data
     B_relax = old_vlf_object.B_relax
     if data_type == "REL":
-        rel_matrix = old_vlf_object.rel_matrix
-        return vlf_mri.RelData(data_file_path, rel_matrix, B_relax, mask, best_fit)
+        return vlf_mri.RelData(data_file_path, vlf_data, B_relax, mask, best_fit)
 
     tau = old_vlf_object.tau
     if data_type == "MAG":
-        mag_matrix = old_vlf_object.mag_matrix
         algo = old_vlf_object.algorithm
-        return vlf_mri.MagData(data_file_path, algo, mag_matrix, B_relax, tau, mask, best_fit)
+        return vlf_mri.MagData(data_file_path, algo, vlf_data, B_relax, tau, mask, best_fit)
 
     t_fid = old_vlf_object.t_fid
     if data_type == "FID":
-        fid_matrix = old_vlf_object.fid_matrix
+        fid_matrix = old_vlf_object.data
         return vlf_mri.FidData(data_file_path, fid_matrix, B_relax, tau, t_fid, mask, best_fit)
