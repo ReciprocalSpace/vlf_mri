@@ -10,8 +10,6 @@ def test_import_SDF_file():
     print(fid_matrix)
 
 
-
-
 if __name__ == "__main__":
     test_import_SDF_file()
 
