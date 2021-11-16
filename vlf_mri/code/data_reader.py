@@ -2,11 +2,28 @@ import numpy as np
 import pickle
 
 from pathlib import Path
+from typing import Union
 
-import vlf_mri
+from vlf_mri.code.fid_data import FidData
+from vlf_mri.code.mag_data import MagData
+from vlf_mri.code.rel_data import RelData
 
 
-def import_sdf_file(sdf_file_path: Path):
+def import_sdf_file(sdf_file_path: Path) -> FidData:
+    """Read and import an SDF file
+
+    Read and import an SDF file and output a FidData object.
+
+    Parameters
+    ----------
+    sdf_file_path : Path
+        Path to the *.sdf file containing the relaxometry data.
+
+    Returns
+    -------
+    fid_data : FidData
+        object containing the FID data. See vlf_mri.FidData for more information.
+    """
     print(f"Importing datafile: {sdf_file_path}")
     with open(sdf_file_path, 'r') as datafile:
         list_of_lines_in_sdf_file = datafile.readlines()
@@ -52,15 +69,31 @@ def import_sdf_file(sdf_file_path: Path):
     fid_matrix_shape = (len(B_relax), len_tau[0], len_fid[0])
     fid_matrix = np.array(raw_data).reshape(fid_matrix_shape)
 
-    return vlf_mri.FidData(sdf_file_path, fid_matrix, B_relax, tau, t_fid)
+    return FidData(sdf_file_path, fid_matrix, B_relax, tau, t_fid)
 
 
-def import_vlf_file(vlf_file_path: Path):
+def import_vlf_file(vlf_file_path: Path) -> Union[FidData, MagData, RelData]:
+    """Import a vlf file
+
+    Read a *.vlf file and return a VlfData object, which is either a FidData, MagData or a RelData object. The
+    returned object is updated to the newest version of the library. Alternatively, the *.vlf file can be imported
+    using the pickle package.
+
+    Parameters
+    ----------
+    vlf_file_path : Path
+        Path to the *.vlf binary file.
+
+    Returns
+    -------
+    vlf_data : FidData, MagData, or RelData
+        Data object saved in the *.vlf file. The object is updated to the newest library version.
+    """
     vlf_file = open(vlf_file_path,  "rb")
     old_vlf_object = pickle.load(vlf_file)
     vlf_file.close()
 
-    # Update object to a newer version of import VlfData class
+    # Update object to a newer version of VlfData class
     data_file_path = old_vlf_object.data_file_path
     data_type = old_vlf_object.data_type
     mask = old_vlf_object.mask
@@ -69,14 +102,14 @@ def import_vlf_file(vlf_file_path: Path):
     vlf_data = old_vlf_object.data
     B_relax = old_vlf_object.B_relax
     if data_type == "REL":
-        return vlf_mri.RelData(data_file_path, vlf_data, B_relax, mask, best_fit)
+        return RelData(data_file_path, vlf_data, B_relax, mask, best_fit)
 
     tau = old_vlf_object.tau
     if data_type == "MAG":
         algo = old_vlf_object.algorithm
-        return vlf_mri.MagData(data_file_path, algo, vlf_data, B_relax, tau, mask, best_fit)
+        return MagData(data_file_path, algo, vlf_data, B_relax, tau, mask, best_fit)
 
     t_fid = old_vlf_object.t_fid
     if data_type == "FID":
         fid_matrix = old_vlf_object.data
-        return vlf_mri.FidData(data_file_path, fid_matrix, B_relax, tau, t_fid, mask, best_fit)
+        return FidData(data_file_path, fid_matrix, B_relax, tau, t_fid, mask, best_fit)

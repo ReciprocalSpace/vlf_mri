@@ -110,7 +110,6 @@ class MagData(VlfData):
         Returns
         -------
         None
-        :param dims:
         """
         # Apply a mask aberrant data
         ind = self.data <= 0.
