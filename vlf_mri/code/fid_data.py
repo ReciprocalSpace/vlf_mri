@@ -39,9 +39,15 @@ class FidData(VlfData):
     apply_mask(sigma, dims, display_report):
         Mask aberrant values in data
     batch_plot(suptitle):
+        Plot all FID data in a single figure
     save_to_pdf(fit_to_plot, display):
-    to_mag_mean(self, t_0=1., t_1=25.)
-
+        Produce a pdf with the FID signal for every relaxation field
+    to_mag_mean(self, t_0=1., t_1=25.):
+        Extract the magnetization for the FID signal using the "mean" algorithm
+    to_mag_intercept(t_0, t_1):
+        Extract the magnetization for the FID signal using the "intercept" algorithm
+    to_mag_max_likelihood()::
+        Extract the magnetization for the FID signal using the "max_likelihood" algorithm
     """
     def __init__(self, fid_file_path: Path, fid_data: np.ndarray, B_relax: np.ndarray, tau: np.ndarray,
                  t_fid: np.ndarray, mask=None, best_fit=None) -> None:
