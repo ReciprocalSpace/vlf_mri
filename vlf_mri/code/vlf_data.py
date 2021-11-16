@@ -30,6 +30,16 @@ class VlfData(ABC):
         Path to the folder where the *.vlf files are saved. Vlf files are binary files containing a VlfData object
         (see save_to_vlf() method for more information). This folder is a sub directory of the saving_folder directory.
         For example, if example_name is "my-experiment", then this field is "/result_my-experiment/vlf_data/".
+    data_type : str
+        Type of data ("FID", "MAG" or "REL")
+    data : numpy.ndarray
+        Array of data
+    mask : numpy.ndarray of bool
+        Mask to apply on data array. Must be the same dimension as data array
+    best_fit : dict
+        Dictionary containing fitted model of the data. For each element of best_fit, the key is the name of the
+        algorithm, while the value is a FitData or a FitDataArray object. An entry is added to the dictionary every
+        time an algorithm is run on the data.
 
     Methods
     -------
@@ -40,6 +50,24 @@ class VlfData(ABC):
 
     """
     def __init__(self, data_file_path, data_type, vlf_data, mask, best_fit):
+        """
+        Initialize a VlfData object
+
+        Parameters
+        ----------
+        data_file_path : Path
+            Path to the original *.sdf file containing the experimental data
+        data_type : str
+            Type of data ("FID", "MAG" or "REL")
+        vlf_data : numpy.ndarray
+            Array of data
+        mask : numpy.ndarray of bool
+            Mask to apply on data array. Must be the same dimension as data array
+        best_fit : dict
+            Dictionary containing fitted model of the data. For each element of best_fit, the key is the name of the
+            algorithm, while the value is a FitData or a FitDataArray object. An entry is added to the dictionary every
+            time an algorithm is run on the data.
+        """
         if mask is None:
             mask = np.zeros_like(vlf_data, dtype=bool)
 
