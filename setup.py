@@ -24,7 +24,6 @@ setuptools.setup(
         "License :: OSI Approved :: MIT License",
         "Programming Language :: Python",
     ],
-    keywords="sphinx",
     packages=setuptools.find_packages(),
     entry_points={"console_scripts": ["tree-cli=trees.bin.tree_cli:main"]},
     python_requires=">=3.7",
