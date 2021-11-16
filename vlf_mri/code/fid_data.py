@@ -51,6 +51,31 @@ class FidData(VlfData):
     """
     def __init__(self, fid_file_path: Path, fid_data: np.ndarray, B_relax: np.ndarray, tau: np.ndarray,
                  t_fid: np.ndarray, mask=None, best_fit=None) -> None:
+        """
+        Initialize a FidData object
+
+        Parameters
+        ----------
+        fid_file_path : Path
+            Path to the original *.sdf file containing the experimental data
+        fid_data : numpy.ndarray
+            Array of FID data
+        B_relax : numpy.ndarray
+            Array of explored relaxation magnetic fields. Each element of this array corresponds to a 2D array of FID data
+            and to a 1D array of tau.
+        tau : numpy.ndarray
+            Array if explored incrementation times. Each element of this array corresponds to a 1D array of FID data.
+        t_fid : numpy.ndarray
+            Array of experimental time. Each element of this array corresponds to a data point in the FID data. This array
+            is 1D, as it is assumed all FID arrays were acquired using the same number of points measured on the same
+            duration.
+        mask : numpy.ndarray of bool, optional
+            Mask to apply on data array. Must be the same dimension as data array. Default is an array of False.
+        best_fit : dict, optional
+            Dictionary containing fitted model of the data. For each element of best_fit, the key is the name of the
+            algorithm, while the value is a FitData or a FitDataArray object. An entry is added to the dictionary every
+            time an algorithm is run on the data. Default is an empty dictionary.
+        """
 
         if mask is None:
             mask = np.zeros_like(fid_data, dtype=bool)
