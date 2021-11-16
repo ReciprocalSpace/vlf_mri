@@ -28,4 +28,11 @@ setuptools.setup(
     packages=setuptools.find_packages(),
     entry_points={"console_scripts": ["tree-cli=trees.bin.tree_cli:main"]},
     python_requires=">=3.7",
+    install_requires=[
+        'numpy>=1.20',
+        'scipy>=1.7',
+        'tqdm>=4.62',
+        'matplotlib>=3.4',
+        'lmfit>=1.0'
+    ]
 )
