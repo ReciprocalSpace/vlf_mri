@@ -11,9 +11,10 @@ class PDFSaver:
     """
     Save multiple plots to a pdf file
 
-    This class saves a list of plots to a single pdf file. Each page contains n x m axes positioned on a regular lattice.
-    The total number of axes does not need to be known in advance. Instead, the user can ask for a new axis as he needs
-    them using the get_ax() method. If a page is full, then the page is stored and a new one is created with empty axes.
+    This class saves a list of plots to a single pdf file. Each page contains n x m axes positioned on a regular
+    lattice. The total number of axes does not need to be known in advance. Instead, the user can ask for a new axis
+    as he needs them using the get_ax() method. If a page is full, then the page is stored and a new one is created
+    with empty axes.
 
     This class manages the operation on the pdf file.
 

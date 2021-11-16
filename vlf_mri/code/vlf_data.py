@@ -5,11 +5,40 @@ import pickle
 
 from abc import ABC
 from datetime import date
-
 from pathlib import Path
 
 
 class VlfData(ABC):
+    """
+    Generic data class for the vlf_mri data
+
+    This class contains the attributes and methods common FidData, MagData, and RelData, and manages
+    data exports.
+
+    Attributes
+    ----------
+    data_file_path : Path
+        Path to the original *.sdf file containing the experimental data
+    experience_name : str
+        Name of the current experiment. The name is extracted from the file name. For example, if the file name is
+        "my-experiment.sdf", then this field would be "my-experiment"
+    saving_folder : Path
+        Path to the folder where the file outputs (namely, pdf files) will be saved. By default, this field is
+        constructed using the experience_name field. For example, if experience_name is "my-experiment", then this field
+        would be "/result_my-experiment/"
+    saving_vlf_folder : Path
+        Path to the folder where the *.vlf files are saved. Vlf files are binary files containing a VlfData object
+        (see save_to_vlf() method for more information). This folder is a sub directory of the saving_folder directory.
+        For example, if example_name is "my-experiment", then this field is "/result_my-experiment/vlf_data/".
+
+    Methods
+    -------
+    update_mask(new_mask, mode):
+        Update the object mask on data
+    save_to_vlf(file_name) -> Path:
+        Save the object to a *.vlf file
+
+    """
     def __init__(self, data_file_path, data_type, vlf_data, mask, best_fit):
         if mask is None:
             mask = np.zeros_like(vlf_data, dtype=bool)
@@ -89,10 +118,41 @@ class VlfData(ABC):
         return file_path
 
     def batch_plot(self, title):
-        return NotImplemented
+        """
+        Produce a figure from the vlf data object
+
+        Parameters
+        ----------
+        title : str
+            Title of figure
+
+        Raises
+        ------
+        NotImplemented
+        """
+        raise NotImplemented
 
     def report(self):
-        return NotImplemented
+        """
+        Print a report of the information in the vlf object
+
+        Raises
+        ------
+        NotImplemented
+        """
+        raise NotImplemented
 
     def save_to_pdf(self, *args):
-        return NotImplemented
+        """
+        Create a pdf out of the data in the object
+
+        Parameters
+        ----------
+        *args
+            Arguments specific to the child class
+
+        Raises
+        ------
+        NotImplemented
+        """
+        raise NotImplemented
