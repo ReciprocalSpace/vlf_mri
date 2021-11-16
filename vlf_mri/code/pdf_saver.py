@@ -1,10 +1,9 @@
 import matplotlib.pyplot as plt
 import numpy as np
-from matplotlib.backends.backend_pdf import PdfPages
-from pathlib import Path
-
 from matplotlib.axes import Axes
 from matplotlib.figure import Figure
+from matplotlib.backends.backend_pdf import PdfPages
+from pathlib import Path
 
 
 # TODO : add kwds argument for more flexibility with page layout
@@ -19,7 +18,7 @@ class PDFSaver:
     This class manages the operation on the pdf file.
 
     Attributes
-    __________
+    ----------
     pdf_file: matplotlib.backends.backend_pdf.PdfPages
         pdf file where the pdf pages are saved
     n_rows : int
@@ -34,11 +33,26 @@ class PDFSaver:
         Specify whether to display each pdf page to the user as a figure in the console or not.
 
     Methods
-    _______
+    -------
     get_ax():
         Returns a new ax object
     close_pdf():
         Close the pdf file
+
+    Examples
+    --------
+    # The following code assumes pdf_saver is at the root directory of the python script. It generates a pdf file
+    # containing two pages with 12 axes (3 x 4), where the second page is half filled.
+
+    >>> from pdf_saver import PDFSaver
+    >>> import numpy as np
+    >>> pdf = PDFSaver("my_pdf.pdf", 3, 4, "Hello world!", True)
+    >>> for i in range(16):
+    >>>    ax = pdf.get_ax()
+    >>>    x = np.linspace(0., 1., 51)
+    >>>    y = np.sin(x * 2 * np.pi * np.random.randn() + 2 * np.pi * np.random.rand())
+    >>>    ax.plot(x, y)
+    >>> pdf.close_pdf()
     """
     def __init__(self, file_path: Path, n_columns: int, n_rows: int, title="", display_pages=False) -> None:
         """
@@ -50,10 +64,10 @@ class PDFSaver:
         ----------
         file_path : Path
             Path where the Pdf is saved
+        n_columns : int
+            Number of columns of axes per page.
         n_rows : int
             Number of rows of axes per page.
-         n_columns : int
-            Number of columns of axes per page.
         title : str
             Title of the document (appears on each page). Default is an empty string.
         display_pages : bool
@@ -76,7 +90,7 @@ class PDFSaver:
 
         Returns
         -------
-        figure axis
+        axis handle
         """
         if self.current_page.flag_end_of_page:
             self._store_page()
@@ -99,7 +113,7 @@ class PDFSaver:
 
     def _store_page(self) -> None:
         """
-        Store the active pdf page to the pdf file.
+        Store the active pdf page to the pdf file
 
         Process all empty axes on the page and store the pdf page in the pdf file. Also display the figure to the user
         if the flag_display is True.
@@ -117,9 +131,44 @@ class PDFSaver:
 
 class PDFPage:
     """
+    Manage a single pdf page or figure object
 
+    This class initializes a figure object with n x m  axes and provides axes to the user when requested. This class
+    works in combination with the PdfSaver class and should not be directly accessed by the user.
+
+    Attributes
+    ----------
+    fig : matplotlib.figure.Figure
+        Figure handle
+    axes : matplotlib.figure.Figure
+        List of all axes handles in the figure
+    _it : int
+        Index of the next axis handle to provide to the user
+    flag_end_of_page : bool
+        Signal that is True when all axes have been send to the user
+
+    Methods
+    -------
+    get_new_ax_handle():
+        Provide the next unused axis handle
+    flush():
+        Set all unused axes in figure to "off"
     """
-    def __init__(self, n_columns:int,  n_rows:int, title="") -> None:
+    def __init__(self, n_columns:int,  n_rows: int, title="") -> None:
+        """
+        Initialize a PdfPage object
+
+        Instantiate a figure with n_columns x n_rows axes with a sup title.
+
+        Parameters
+        ----------
+        n_columns : int
+            Number of columns of axes per page.
+        n_rows : int
+            Number of rows of axes per page.
+        title : str, optional
+            Figure sup title. Default is an empty string.
+        """
         self.format = format
         fig, axes = plt.subplots(n_columns, n_rows, figsize=(21 / 2.54 - 2, 29 / 2.54 - 2), dpi=120, tight_layout=True)
         fig.suptitle(title)
@@ -129,6 +178,16 @@ class PDFPage:
         self.flag_end_of_page = False
 
     def get_new_ax_handle(self) -> Axes:
+        """
+        Provide the next unused axis handle
+
+        This methods provides the next axis handle to the user when called. When no more empty ax is available, the
+        flag_end_of_file signal is set to True.
+
+        Returns
+        -------
+        axis handle
+        """
         ax = self.axes[self._it]
         self._it += 1
         if self._it >= len(self.axes):
@@ -136,6 +195,17 @@ class PDFPage:
         return ax
 
     def flush(self) -> Figure:
+        """
+        Set all unused axes in figure to "off"
+
+        This method sets all remaining axes to "off" so that the final pdf file does not contain empty axes. Call this
+        method when finishing a pdf page.
+
+        Returns
+        -------
+        figure handle
+
+        """
         while not self.flag_end_of_page:
             ax = self.get_new_ax_handle()
             ax.axis('off')
