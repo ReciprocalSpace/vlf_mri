@@ -17,6 +17,32 @@ from vlf_mri.code.fit_data import FitData
 
 
 class FidData(VlfData):
+    """
+    Contain and manage Free Induction Decay data
+
+    This class stores and manages Free Induction Decay data.
+
+    Attributes
+    ----------
+    B_relax : numpy.ndarray
+        Array of explored relaxation magnetic fields. Each element of this array corresponds to a 2D array of FID data
+        and to a 1D array of tau.
+    tau : numpy.ndarray
+        Array if explored incrementation times. Each element of this array corresponds to a 1D array of FID data.
+    t_fid : numpy.ndarray
+        Array of experimental time. Each element of this array corresponds to a data point in the FID data. This array
+        is 1D, as it is assumed all FID arrays were acquired using the same number of points measured on the same
+        duration.
+
+    Methods
+    -------
+    apply_mask(sigma, dims, display_report):
+        Mask aberrant values in data
+    batch_plot(suptitle):
+    save_to_pdf(fit_to_plot, display):
+    to_mag_mean(self, t_0=1., t_1=25.)
+
+    """
     def __init__(self, fid_file_path: Path, fid_data: np.ndarray, B_relax: np.ndarray, tau: np.ndarray,
                  t_fid: np.ndarray, mask=None, best_fit=None) -> None:
 
@@ -101,7 +127,6 @@ class FidData(VlfData):
         Returns
         -------
         None
-        :param dims:
         """
         # Apply a mask aberrant data
         ind = self.data <= 0.
@@ -181,41 +206,81 @@ class FidData(VlfData):
 
             self.batch_plot("Report: FID after mask")
 
-    def batch_plot(self, suptitle="") -> None:
+    def batch_plot(self, title="") -> None:
+        """
+        Plot all FID data in a single figure
+
+        This methods plots every FID array in a single figure with n axis, where n is the number of B_relax fields in
+        the experiment.
+
+        Parameters
+        ----------
+        title : str, optional
+            Figure sup title. Default is "".
+
+        Returns
+        -------
+        None
+        """
         fid_matrix = ma.masked_array(self.data, self.mask)
+
         n_fig = len(self.B_relax)
         n_rows, n_columns = ceil(n_fig / 3), 3
+
         fig, axes_2D = plt.subplots(n_rows, n_columns, sharex='all', sharey="all",
                                     figsize=(16 / 2.54, n_rows * 5 / 2.54),
                                     squeeze=False)
         axes_1D = np.array(axes_2D).flatten()
 
+        # Produce a smooth color cycler for successive curves in an axis. This helps the user assess whether two
+        # successive FID are close on the image. This helps quickly see if there is a problem in the data.
         colormap = plt.cm.get_cmap("plasma")
-        costum_colors = cycler('color', [colormap(x) for x in np.linspace(0, 0.9, len(self.tau.T))])
-
-        # costum_cycler = cycler(color=[colormap(x) for x in np.linspace(0, 0.8, len(tau))])
+        custom_colors = cycler('color', [colormap(x) for x in np.linspace(0, 0.9, len(self.tau.T))])
         for i, ax in enumerate(axes_1D):
-            ax.set_prop_cycle(cycler('color', costum_colors))
+            ax.set_prop_cycle(cycler('color', custom_colors))
             if i < len(fid_matrix):
-                cst = np.max(np.absolute(fid_matrix[i]))
+                cst = np.max(np.absolute(fid_matrix[i]))  # Curve normalization
                 ax.plot(self.t_fid, fid_matrix[i].T / cst)
                 ax.tick_params(axis='both', which='major', pad=0)
                 ax.text(0, 0.9, r"$B_{relax}$=" f"{self.B_relax[i]:.1e} MHz")
             else:
                 ax.axis('off')
         for axes_i in axes_2D:
-            axes_i[0].set_ylabel("Signal [arb. units]")
+            axes_i[0].set_ylabel("Signal [arb. units]")  # Display y label only for first axis of each row
 
         for ax in axes_2D[-1]:
-            ax.set_xlabel("Time [us]")
-        fig.suptitle(suptitle)
+            ax.set_xlabel("Time [us]")  # Display x label only for last axes row
+
+        fig.suptitle(title)
         plt.subplots_adjust(wspace=0, hspace=0)
         plt.show()
 
-    def save_to_pdf(self, fit_to_plot=None, display=False) -> None:
+    def save_to_pdf(self, fit_to_plot="all", display=False) -> None:
+        """
+        Produce a pdf with the FID signal for every relaxation field
+
+        This methods plots every FID signal for a given B_relax relax to a single axis and produces as many pdf file
+        as there are B_relax fields. By default, every previously computed fit of the FID data are also plotted on the
+        figures. If no fit method were called, then no fitted data is shown in the pdf. Using the fit_to_plot
+        parameter, it is possible to specify one/multiple fit to plot in the figure, given that the relevant
+        algorithm(s) was(were) applied to the data.
+
+        Parameters
+        ----------
+        fit_to_plot : str or list of str, optional
+            Key of the fit, or list of keys of the fit to plot to the FID data (see the appropriate algorithm to see
+            the list of accessible keys). Default is "all".
+        display: bool, optional
+            Signal that specifies whether the figures are shown or not to the user. Default it False
+
+        Returns
+        -------
+        None
+        """
         print("-" * 16 + "saving FID matrix to PDF" + "-" * 16)
 
-        if fit_to_plot is None:
+        # Generate/validate the list of fit to plot
+        if fit_to_plot == "all":
             best_fit_keys = self.best_fit.keys()
         elif isinstance(fit_to_plot, str):
             best_fit_keys = [fit_to_plot] if fit_to_plot in self.best_fit else []
@@ -249,26 +314,64 @@ class FidData(VlfData):
             pdf_saver.close_pdf()
 
     def to_mag_mean(self, t_0=1., t_1=25.) -> MagData:
+        """
+        Extract the magnetization for the FID signal using the "mean" algorithm
+
+        This methods computes the mean value of the FID signal for all data points between t_0 and t_1 [us] and produces
+        a MagData object.
+
+        The result of the fit is also added to the best_fit dictionary attribute with "mean" key.
+
+        Parameters
+        ----------
+        t_0 : float, optional
+            Beginning of the domain used for averaging. Default is 1. us.
+        t_1 : float, optional
+            End of the domain used for averaging. Default is 25. us.
+
+        Returns
+        -------
+        mag_data : MagData
+            Object containing the magnetization data extracted from the FID signal.
+        """
         index_min = np.argmin(np.absolute((self.t_fid - t_0)))
         index_max = np.argmin(np.absolute((self.t_fid - t_1)))
 
         mean_mag = np.mean(self.data[:, :, index_min:index_max], axis=2)
 
+        # Best fit data must have the same dimension as FID data, but we only want to display the fit over the data
+        # points used in the 'mean' algorithm -> we have to mask the other points
         best_fit = np.expand_dims(mean_mag, axis=2)
         best_fit = np.tile(best_fit, (1, 1, len(self.t_fid)))
-
         mask = np.ones_like(self.data, dtype=bool)
         mask[:, :, index_min:index_max] = False
-
         fit_data = FitData(best_fit, mask, label=f"Mean")
-
-        # best_fit = ma.array(best_fit, mask=mask)
-
         self.best_fit["mean"] = fit_data
 
         return MagData(self.data_file_path, "mean", mean_mag, self.B_relax, self.tau, normalize=True)
 
     def to_mag_intercept(self, t_0=1., t_1=25.) -> MagData:
+        """
+        Extract the magnetization for the FID signal using the "intercept" algorithm
+
+        This methods extract the magnetization value of the FID signal by computing the intercept of a the first
+        order polynomial linear regression (y = a*x + b) over the data points between t_0 and t_1 [us]. It outputs a
+        MagData object.
+
+        The result of the fit is also added to the best_fit dictionary attribute with "intercept" key.
+
+        Parameters
+        ----------
+        t_0 : float, optional
+            Beginning of the domain used for averaging. Default is 1. us.
+        t_1 : float, optional
+            End of the domain used for averaging. Default is 25. us.
+
+        Returns
+        -------
+        mag_data : MagData
+            Object containing the magnetization data extracted from the FID signal.
+        """
         fid_matrix = self.data
         mask = self.mask
 
@@ -280,10 +383,13 @@ class FidData(VlfData):
 
         len_fid = index_max - index_min
 
+        # Slice the FID signal and reshape it as a 2D matrix. This allows a vectorized computation of the linear
+        # regression over every FIDé
         Y = fid_matrix[:, :, index_min:index_max].reshape((-1, len_fid)).T
         Y_mask = mask[:, :, index_min:index_max].reshape((-1, len_fid)).T
 
         Y = ma.masked_array(Y, Y_mask)
+        # X are integers, and not t_fid, but this is unimportant, as we do not use the slope "a".
         X = np.tile(np.arange(index_min, index_max), (Y.shape[1], 1)).T
         X = ma.masked_array(X, Y_mask)
 
@@ -291,10 +397,12 @@ class FidData(VlfData):
         X_std = X.std(axis=0)
         Y_mean = Y.mean(axis=0)
 
-        a = (np.mean(X * Y, axis=0) - X_mean * Y_mean) / X_std ** 2
-        b = Y_mean - a * X_mean
+        # Y = (a*X + b) where a and b are arrays with size equals to Y.shape[0]
+        a = (np.mean(X * Y, axis=0) - X_mean * Y_mean) / X_std ** 2  # intercept
+        b = Y_mean - a * X_mean  # slope
 
-        # # Construction du best_fit
+        # Best fit data must have the same dimension as FID data, but we only want to display the fit over the data
+        # points used in the 'mean' algorithm -> we have to mask the other points
         X = np.arange(fid_matrix.shape[-1])
         best_fit = []
         for a_i, b_i in zip(a, b):
@@ -313,7 +421,42 @@ class FidData(VlfData):
         return MagData(self.data_file_path, "intercept", intercept, self.B_relax, self.tau, normalize=True)
 
     def to_mag_max_likelihood(self) -> MagData:
+        """
+        Extract the magnetization for the FID signal using the "max_likelihood" algorithm
+
+        This methods extract the magnetization value of the FID signal by maximizing the likelihood of observing a given
+        FID experimental signal considering a specific data model. This current implementation assumes a Rician noise
+        distribution with mean 0. and standard deviation sigma over a mono-exponential FID signal :
+        M(t) = M0 * exp(-t/T2). In practice, this model is ofter too simple to accurately describe the measured FID
+        signal, which can lead to important bias and errors in the evaluation of the magnetization.  It outputs a
+        MagData object.
+
+        The result of the fit is also added to the best_fit dictionary attribute with "max_likelihood" key.
+
+        Returns
+        -------
+        mag_data : MagData
+            Object containing the magnetization data extracted from the FID signal.
+        """
         def likelihood(theta: list, *args):
+            """
+            Compute the likelihood of a signal given a model
+
+            This function computes the likelihood of measured a given noisy signal considering a model.
+
+            Parameters
+            ----------
+            theta : list
+                List of parameters in the model. theta = [M_0, T2, sigma]
+            args : tuple
+                args = (t_fid, noisy_signal)
+
+            Returns
+            -------
+            log_likelihood : numpy.ndarray
+                Log likelihood (negative) of the noisy signal for the model. Note: the negative value is returned to
+                make the output of this function compatible with the minimization method of the scipy library.
+            """
             M_0, T2, sigma = theta
             t, noisy_signal = args
             signal = M_0 * np.exp(-t / T2)
@@ -321,9 +464,29 @@ class FidData(VlfData):
             return -np.sum(log_likelihood)
 
         def model(theta, t_fid):
+            """
+            Compute the expected signal considering a model
+
+            Parameters
+            ----------
+            theta : list
+                List of parameters in the model. theta = [M_0, T2, sigma]
+            t_fid : numpy.ndarray
+                Array of experimental time.
+
+            Returns
+            -------
+            model : numpy.ndarray
+                Computed expectancy signal
+            """
             M_0, T2, sigma = tuple(theta)
             S = M_0 * np.exp(-t_fid / T2)
             SNR = S / sigma
+
+            # Note : for SNR > 37, the rice.stats returns a div by zero error. This is a numerical issue in the
+            # implementation of the rice package of the scipy library. For points with high SNR, the rician distribution
+            # becomes close to the gaussian distribution with 0. mean, i.e. the noise does not influence the expected
+            # value of the signal. This is not the case at low SNR.
             index = (SNR < 37)
             not_index = np.logical_not(index)
 
@@ -333,19 +496,21 @@ class FidData(VlfData):
             out[not_index] = S[not_index]
             return out
 
-        tau = self.tau
         mag = []
         best_fit = []
         mag_mask = []
-        for fid_i, mask_i,  in zip(self.data, self.mask):
+        # Iteration over the B_relax field values
+        for fid_i, mask_i in zip(self.data, self.mask):
             mag_i = []
             best_fit_i = []
             mag_mask_i = []
+            # Iteration over the tau values
             for fid_ij, mag_mask_ij in zip(fid_i, mask_i):
                 ind = ~ mag_mask_ij
                 fid = fid_ij[ind]
                 t_fid = self.t_fid[ind]
 
+                # Approximate initial parameter values for the minimization algorithm
                 M_0 = np.mean(fid[:30])
                 sigma = fid[-30:].std() ** 2
                 T_2 = np.mean(t_fid[-30:]) / np.log(M_0/np.mean(t_fid[-30:]))
@@ -356,6 +521,7 @@ class FidData(VlfData):
 
                 best_fit_i.append(model(result['x'], self.t_fid))
 
+                # Mask the point if there was an error in the minimization
                 data_point_to_be_mask = not result['success'] or not np.alltrue(result['x'] > 0.)
                 mag_mask_i.append(data_point_to_be_mask)
 
