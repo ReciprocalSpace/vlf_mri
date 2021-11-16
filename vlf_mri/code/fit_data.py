@@ -21,7 +21,7 @@ class FitData:
         Keywords arguments to pass to the pyplot.plot method. If data is multidimensional, every 1D arrays of data will
         have the same plot formatting.
     """
-    def __init__(self, data: np.ndarray, mask=None, **plot_keywords):
+    def __init__(self, data: np.ndarray, mask=None, **kwargs):
         """
         Initialize a FitData object
 
@@ -31,12 +31,12 @@ class FitData:
             Fitted data. This array must be the same shape as the original data.
         mask : numpy.ndarray of bool
             Mask to apply on the fitted data.
-        plot_keywords : dict
+        **kwargs
             Keywords arguments to pass when plotting the fitted data.
         """
         self.data = data
         self.mask = np.zeros_like(data, dtype=bool) if mask is None else mask
-        self.plot_keywords = plot_keywords if plot_keywords is not None else {}
+        self.plot_keywords = kwargs if kwargs is not None else {}
 
     def __getitem__(self, item):
         return FitData(self.data[item], self.mask[item], **self.plot_keywords)
