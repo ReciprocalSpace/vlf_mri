@@ -1,3 +1,4 @@
+"""vlf_data class"""
 from __future__ import annotations
 
 import numpy as np
@@ -115,7 +116,8 @@ class VlfData(ABC):
         return self
 
     def save_to_vlf(self, file_name=None) -> Path:
-        """Save the object to a *.vlf file
+        """
+        Save the object to a *.vlf file
 
         Export the object into a *.vlf binary file using the pickle package. If no filename is probided, the file is
         saved in the experience saving folder and is name by default "YYMMDD-<data type>-<experience name>.vlf" where
