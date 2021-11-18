@@ -38,7 +38,7 @@ class FidData(VlfData):
     -------
     apply_mask(sigma, dims, display_report):
         Mask aberrant values in data
-    batch_plot(suptitle):
+    batch_plot(title):
         Plot all FID data in a single figure
     save_to_pdf(fit_to_plot, display):
         Produce a pdf with the FID signal for every relaxation field
@@ -61,14 +61,14 @@ class FidData(VlfData):
         fid_data : numpy.ndarray
             Array of FID data
         B_relax : numpy.ndarray
-            Array of explored relaxation magnetic fields. Each element of this array corresponds to a 2D array of FID data
-            and to a 1D array of tau.
+            Array of explored relaxation magnetic fields. Each element of this array corresponds to a 2D array of FID
+            data and to a 1D array of tau.
         tau : numpy.ndarray
             Array if explored incrementation times. Each element of this array corresponds to a 1D array of FID data.
         t_fid : numpy.ndarray
-            Array of experimental time. Each element of this array corresponds to a data point in the FID data. This array
-            is 1D, as it is assumed all FID arrays were acquired using the same number of points measured on the same
-            duration.
+            Array of experimental time. Each element of this array corresponds to a data point in the FID data. This
+            array is 1D, as it is assumed all FID arrays were acquired using the same number of points measured on the
+            same duration.
         mask : numpy.ndarray of bool, optional
             Mask to apply on data array. Must be the same dimension as data array. Default is an array of False.
         best_fit : dict, optional
@@ -119,8 +119,8 @@ class FidData(VlfData):
                   "Total fid matrix size:       \t" +
                   f"({self.data.shape[0]} x {self.data.shape[1]} x {self.data.shape[2]}) " +
                   f"ou {np.prod(self.data.shape):,} points\n" +
-                  f"Champs evolution (B_relax): \t{len(self.B_relax)} champs étudiés entre {np.min(self.B_relax):.2e} " +
-                  f"et {np.max(self.B_relax):.2e} MHz\n" +
+                  f"Champs evolution (B_relax): \t{len(self.B_relax)} champs étudiés " +
+                  f"entre {np.min(self.B_relax):.2e} et {np.max(self.B_relax):.2e} MHz\n" +
                   f"Temps evolution (tau):      \t{self.tau.shape[1]} pts par champ d evolution\n"
                   )
 
@@ -151,7 +151,8 @@ class FidData(VlfData):
         ----------
         sigma: float
             Rejection criterion for the data points. Default is 2.
-
+        dims : str, optional
+            Specify which dimension(s) to use to find the aberrant data. Default is "xyz".
         display_report: bool
             Display the results of masking procedure.
 
@@ -179,7 +180,7 @@ class FidData(VlfData):
         self.mask = np.logical_or(self.mask, grad_n > sigma)
 
         if display_report:
-            fid_matrix = ma.masked_array(self.data, mask=self.mask)
+            # fid_matrix = ma.masked_array(self.data, mask=self.mask)
             fig, (axes_bef, axes_after) = plt.subplots(2, 4, tight_layout=True, figsize=(15 / 2.54, 10 / 2.54))
 
             fig.suptitle("Report: Apply mask")
@@ -455,7 +456,7 @@ class FidData(VlfData):
         """
         Extract the magnetization for the FID signal using the "max_likelihood" algorithm
 
-        This methods extract the magnetization value of the FID signal by maximizing the likelihood of observing a given
+        This method extracts the magnetization value of the FID signal by maximizing the likelihood of observing a given
         FID experimental signal considering a specific data model. This current implementation assumes a Rician noise
         distribution with mean 0. and standard deviation sigma over a mono-exponential FID signal :
         M(t) = M0 * exp(-t/T2). In practice, this model is ofter too simple to accurately describe the measured FID
