@@ -39,7 +39,7 @@ class MagData(VlfData):
         save_to_pdf(fit_to_plot, display):
             Produce a pdf with the magnetization data
         to_rel():
-
+            Extract the relaxation time and populations from the magnetization data
         """
     def __init__(self, fid_file_path: Path, algorithm: str, mag_data: np.ndarray, B_relax: np.ndarray,
                  tau: np.ndarray, mask=None, best_fit=None, normalize=False):
@@ -450,7 +450,7 @@ class MagData(VlfData):
 
     def to_rel(self):
         """
-        Extract the relaxation time and population from the magnetization data
+        Extract the relaxation time and populations from the magnetization data
 
         This method extract the relaxation time and populations from the magnetization data using a mono and
         bi-exponential models.
