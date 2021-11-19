@@ -10,7 +10,8 @@ from vlf_mri.code.rel_data import RelData
 
 
 def import_sdf_file(sdf_file_path: Path) -> FidData:
-    """Read and import an SDF file
+    """
+    Read and import an SDF file
 
     Read and import an SDF file and output a FidData object.
 
@@ -23,6 +24,7 @@ def import_sdf_file(sdf_file_path: Path) -> FidData:
     -------
     fid_data : FidData
         object containing the FID data. See vlf_mri.FidData for more information.
+
     """
     print(f"Importing datafile: {sdf_file_path}")
     with open(sdf_file_path, 'r') as datafile:
@@ -73,7 +75,8 @@ def import_sdf_file(sdf_file_path: Path) -> FidData:
 
 
 def import_vlf_file(vlf_file_path: Path) -> Union[FidData, MagData, RelData]:
-    """Import a vlf file
+    """
+    Import a vlf file
 
     Read a *.vlf file and return a VlfData object, which is either a FidData, MagData or a RelData object. The
     returned object is updated to the newest version of the library. Alternatively, the *.vlf file can be imported
