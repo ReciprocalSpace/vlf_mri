@@ -11,7 +11,6 @@ Welcome to vlf_mri's documentation!
    :caption: Contents:
 
    readme
-   modules
 
 
 
