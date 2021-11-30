@@ -52,7 +52,7 @@ def test_save_to_pdf():
     print("*" * 32 + " test_apply_mask")
     fid_matrix = vlf_mri.import_sdf_file(file)
     fid_matrix.apply_mask(sigma=2, dims="xyz", display_report=False)
-    fid_matrix.save_to_pdf(fit_to_plot=None, display=False)
+    fid_matrix.save_to_pdf(display=False)
 
 
 def test_fid_to_mag():
