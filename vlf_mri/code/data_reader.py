@@ -8,6 +8,8 @@ from vlf_mri.code.fid_data import FidData
 from vlf_mri.code.mag_data import MagData
 from vlf_mri.code.rel_data import RelData
 
+# TODO : refactor using factory design pattern
+
 
 def import_sdf_file(sdf_file_path: Path) -> FidData:
     """
@@ -72,6 +74,127 @@ def import_sdf_file(sdf_file_path: Path) -> FidData:
     fid_matrix = np.array(raw_data).reshape(fid_matrix_shape)
 
     return FidData(sdf_file_path, fid_matrix, B_relax, tau, t_fid)
+
+
+def import_sdf2_file(sdf_file_path: Path) -> FidData:
+    sdf_file_importer = ImportSdfFileV2()
+    return sdf_file_importer(sdf_file_path)
+
+
+class ImportSdfFileV2:
+    def __init__(self):
+        self.fid = []
+        self.tau = []
+        self.B_rel = []
+
+        self.len_fid = None
+        self.len_tau = None
+        self.T1MAX = None
+        self.delta_t = None
+        self.tau_equation = None
+        self.state = self.file_header
+
+        self.FLAG_END_OF_FILE = False
+
+    def __call__(self, sdf2_file_path: Path):
+        self.__init__()
+
+        with open(sdf2_file_path, "r") as file:
+            while not self.FLAG_END_OF_FILE:
+                self.state(file)
+                self.state = self.find_state(file)
+
+        self.fid = np.array(self.fid)
+        self.tau = np.array(self.tau)
+        self.B_rel = np.array(self.B_rel)
+
+        t_fid = np.linspace(0, self.delta_t*self.len_fid, self.len_fid)
+
+        return FidData(sdf2_file_path,self.fid,self.B_rel,self.tau,t_fid)
+
+    def find_state(self, file):
+        line = file.readline().rstrip()
+        # print("\tFind state:\t",  line)
+        word = line.split(" ")[0]
+        if word == "NMRD":
+            return self.skip_line
+        if word == "PARAMETER":
+            return self.parameter_summary
+        if word == "ZONE":
+            return self.zone_header
+        if word == "DATA":
+            return self.data
+        if word == "":
+            self.FLAG_END_OF_FILE = True
+            return None
+        # print("NOT FOUND:\t", repr(line))
+        raise NotImplementedError
+
+    def file_header(self, file):
+        # print("Current state:\tFile header")
+        for _ in range(10):
+            _ = file.readline()
+
+    def skip_line(self, file):
+        # print("Current state:\tParameter summary")
+        _ = file.readline().rstrip()
+
+    def parameter_summary(self, file):
+        # print("Current state:\tParameter summary")
+        line = file.readline().rstrip()
+        while line:
+            words = line.split(" = ")
+            key, value = words[0], words[1]
+
+            if key == "BS":
+                self.len_fid = int(float(value))
+            elif key == "TAU":
+                # ex: words[1] = [log:4*T1MAX:0.01*T1MAX:32] (equation)
+                t = value[1:-1].split(":")  # On retire les "[" et "]"
+
+                tau_min = t[1][:-5] + "self.T1MAX"
+                tau_max = t[2][:-5] + "self.T1MAX"
+                len_tau = t[3]
+
+                self.len_tau = int(t[3])
+                if t[0] == "log":
+                    # tau_min * np.logspace(0., 1., len_tau[0], base=tau_1 / tau_0)
+                    self.tau_equation = (
+                        f"x={tau_min}*np.logspace(0, 1, {len_tau}, base=({tau_max})/({tau_min}))"
+                    )
+                elif t[0] == "lin":
+                    self.tau_equation = (
+                        f"x=np.linspace({tau_min}, {tau_max}, {len_tau})"
+                    )
+            elif key == "DW":
+                self.delta_t = float(value)
+            line = file.readline().rstrip()
+
+    def zone_header(self, file):
+        # print("Current state:\tZone header")
+        line = file.readline().rstrip()
+        while line:
+            key, value = tuple(line.split(" = "))
+            if key == "BR":
+                self.B_rel.append(float(value))
+            elif key == "T1MAX":
+                self.T1MAX = float(value)
+                # print(self.tau_equation)
+                out = {}
+                exec(self.tau_equation, {'self': self, 'np':np}, out)
+                self.tau.append(out["x"])
+            line = file.readline().rstrip()
+
+    def data(self, file):
+        # print("Current state:\tData")
+        _ = file.readline()
+        line = file.readline().rstrip()
+        data = []
+        while line:
+            data.append(float(line.split("\t\t")[2]))
+            line = file.readline().rstrip()
+        data = np.array(data).reshape(self.len_tau, self.len_fid)
+        self.fid.append(data)
 
 
 def import_vlf_file(vlf_file_path: Path) -> Union[FidData, MagData, RelData]:
