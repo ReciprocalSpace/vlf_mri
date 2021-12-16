@@ -4,8 +4,13 @@ from pathlib import Path
 
 folder = Path("relax_test_data")
 file = Path("relax_test_data/sang-0p5C.sdf")
-fid_data = vlf_mri.import_sdf_file(file)
-fid_data.apply_mask(sigma=2, display_report=False)
+
+folder = Path("relax_test_data")
+file = folder / "Sang_total_AC.sdf"
+
+# fid_data = vlf_mri.import_sdf_file(file)
+fid_data = vlf_mri.import_sdf2_file(file)
+fid_data.apply_mask(sigma=10, display_report=True)
 mag_data_mean = fid_data.to_mag_mean(t_0=5, t_1=50)
 
 
@@ -16,7 +21,7 @@ def test_batch_plot():
 
 def test_apply_mask():
     global mag_data_mean
-    mag_data_mean.apply_mask(sigma=3, display_report=True)
+    mag_data_mean.apply_mask(sigma=10, display_report=True)
 
 
 def test_to_string():
@@ -30,7 +35,7 @@ def test_slicing():
     # print(new_mag_data)
 
     rel_data = mag_data_mean.to_rel()
-    new_mag_data = mag_data_mean[0:3, 32:64]
+    new_mag_data = mag_data_mean[0:3, 5:]
     print(new_mag_data)
     new_mag_data.save_to_pdf()
 
