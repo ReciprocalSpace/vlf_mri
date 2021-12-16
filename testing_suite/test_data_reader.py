@@ -1,4 +1,6 @@
-from vlf_mri import import_sdf_file
+import numpy as np
+
+from vlf_mri import import_sdf_file, import_sdf2_file
 from pathlib import Path
 
 
@@ -11,5 +13,8 @@ def test_import_SDF_file():
 
 
 if __name__ == "__main__":
-    test_import_SDF_file()
+    # test_import_SDF_file()
+    folder = Path("relax_test_data")
+    file = folder / "Sang_total_AC.sdf"
+    fid_data = import_sdf2_file(file)
 
