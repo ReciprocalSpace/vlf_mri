@@ -110,6 +110,11 @@ class ImportSdfFileV2:
 
         t_fid = np.linspace(0, self.delta_t*self.len_fid, self.len_fid)
 
+        for tau_i, fid_i in zip(self.tau, self.fid):
+            if tau_i[0] < tau_i[-1]:
+                tau_i[:] = tau_i[::-1]
+                fid_i[:] = fid_i[::-1]
+
         return FidData(sdf2_file_path,self.fid,self.B_rel,self.tau,t_fid)
 
     def find_state(self, file):
@@ -181,7 +186,7 @@ class ImportSdfFileV2:
                 self.T1MAX = float(value)
                 # print(self.tau_equation)
                 out = {}
-                exec(self.tau_equation, {'self': self, 'np':np}, out)
+                exec(self.tau_equation, {'self': self, 'np': np}, out)
                 self.tau.append(out["x"]*1e-6)
             line = file.readline().rstrip()
 
