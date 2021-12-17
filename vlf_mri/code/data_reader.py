@@ -182,7 +182,7 @@ class ImportSdfFileV2:
                 # print(self.tau_equation)
                 out = {}
                 exec(self.tau_equation, {'self': self, 'np':np}, out)
-                self.tau.append(out["x"])
+                self.tau.append(out["x"]*1e-6)
             line = file.readline().rstrip()
 
     def data(self, file):
