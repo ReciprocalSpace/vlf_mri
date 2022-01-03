@@ -37,7 +37,7 @@ def import_sdf_file(sdf_file_path: Path) -> FidData:
     len_fid, delta_t_fid = [], []
     save_data = {"T1MX=": lambda _words: T1MX.append(float(_words[1])),
                  "BRLX=": lambda _words: B_relax.append(float(_words[1])),
-                 "BS": lambda _words: len_fid.append(int(_words[2])),
+                 "BS": lambda _words: len_fid.append(int(float(_words[2]))),
                  "DW": lambda _words: delta_t_fid.append(float(_words[2])),
                  "NBLK=": lambda _words: len_tau.append(int(_words[1])),
                  "BINI=": lambda _words: tau_init.append(
