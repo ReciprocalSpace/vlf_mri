@@ -8,10 +8,13 @@ from math import ceil
 from numpy import ma
 from pathlib import Path
 
+
 from vlf_mri.code.pdf_saver import PDFSaver
 from vlf_mri.code.vlf_data import VlfData
 from vlf_mri.code.rel_data import RelData
 from vlf_mri.code.fit_data import FitDataArray, FitData
+from vlf_mri.code.ilt_data import ILTData
+from . import utils
 
 
 class MagData(VlfData):
@@ -240,9 +243,9 @@ class MagData(VlfData):
         """
         mag_data = ma.masked_array(self.data, self.mask)
         n_fig = len(self.B_relax)
-        n_rows, n_columns = ceil(n_fig / 3), 3
+        n_rows, n_columns = ceil(n_fig / 5), 5
         fig, axes_2D = plt.subplots(n_rows, n_columns, sharey="all",
-                                    figsize=(16 / 2.54, n_rows * 5 / 2.54),
+                                    figsize=(20 / 2.54, n_rows * 5 / 2.54),
                                     squeeze=False)
         axes_1D = np.array(axes_2D).flatten()
 
@@ -501,3 +504,43 @@ class MagData(VlfData):
         # rel_mask = np.append(mono_mask, bi_mask, bi_mask, bi_mask)
 
         return RelData(self.data_file_path, rel_matrix, self.B_relax)  # rel_mask)
+
+    def to_ilt(self, R1: np.array = None, lmd: float = None):
+        if R1 is None:
+            log_r1_min = -np.log10(self.tau.max()) - np.log10(1)
+            log_r1_max = -np.log10(self.tau.min()) + np.log10(1)
+            R1 = np.logspace(log_r1_min, log_r1_max, 101)
+            R1 = np.logspace(-3, 3.3, 101)
+
+        # if lmd is None:
+        #     ind = min(self.data.shape[1], 5)
+        #     lmd = np.std(self.data[:, :-ind])
+
+        ALPHA = []
+        FIT = []
+        R1_array = []
+        LMD = []
+        for tau_i, mag_i in zip(self.tau, self.data):
+            # lmd = np.std(mag_i[:10])/400
+            # lmd = 1
+            alpha, fit, loss = utils.ilt_uniform_penalty(tau_i, mag_i+1., R1, lmd)
+            ALPHA.append(alpha)
+            FIT.append(fit)
+            R1_array.append(R1)
+            LMD.append(lmd)
+
+        LMD = np.array(LMD)
+        R1_array = np.array(R1_array)
+
+        fit = np.array(FIT)
+        alpha = np.array(ALPHA)
+
+        best_fit = FitData(fit-1,
+                           c='tab:gray',
+                           label=r"Inv. Laplace Transform")
+        self.best_fit["ilt"] = best_fit
+
+        return ILTData(self.data_file_path, "ILT", alpha, self.B_relax, R1_array, LMD)
+
+
+
