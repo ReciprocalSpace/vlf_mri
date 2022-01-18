@@ -44,7 +44,8 @@ def test_indexing():
 def test_apply_mask():
     print("*" * 32 + " test_apply_mask")
     fid_matrix = vlf_mri.import_sdf_file(file)
-    fid_matrix.apply_mask(sigma=2, dims="xyz", display_report=True)
+    fid_matrix.batch_plot()
+    fid_matrix.apply_mask(sigma=4, dims="xyz", display_report=True)
     print(fid_matrix)
 
 
