@@ -1,6 +1,6 @@
 # vlf-mri
 
-Very-low-fied MRI  (vlf-mri) implements data analysis algorithms for Fast Field Cycling Nuclear Magnetic Resonance data (FFC-NMR).
+The Very-low-fied MRI (vlf-mri) library implements data analysis algorithms for Fast Field Cycling Nuclear Magnetic Resonance data (FFC-NMR).
 
 
 ## Description
@@ -40,7 +40,7 @@ import vlf_mri
 
 datafile = Path("test_data.sdf")
 fid_data = vlf_mri.import_sdf_file(datafile)
-fid_data.batch_plot()  # The data contains outliers!
+fid_data.batch_plot("Fid data with outliers!")  # The data contains outliers!
 ```
 ![alt text](https://github.com/ReciprocalSpace/ReciprocalSpace/blob/main/images/fid_outliers.png)
 
@@ -51,7 +51,7 @@ fid_data.apply_mask(sigma=5, display_report=True)  # This should do the trick!
 ![alt text](https://github.com/ReciprocalSpace/ReciprocalSpace/blob/main/images/mask_report.png)
 
 ```python
-fid_data.batch_plot()  # This is better!
+fid_data.batch_plot("Report: FID after mask")  # This is better!
 ```
 ![alt text](https://github.com/ReciprocalSpace/ReciprocalSpace/blob/main/images/fid_after_mask.png)
 
