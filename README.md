@@ -1,13 +1,15 @@
 # vlf-mri
 
-The Very-low-fied MRI (vlf-mri) library implements data analysis algorithms for Fast Field Cycling Nuclear Magnetic Resonance data (FFC-NMR).
+The Very-low-field MRI (vlf-mri) library implements data analysis algorithms for Fast Field Cycling Nuclear Magnetic 
+Resonance data (FFC-NMR).
 
 
-## Description
-FFC-NMR data generaly consists in a collection of Free Induction Decay signals (FID) acquired using a set of NMR sequence parameters. In this librariry, we assume three dimensional data *s(t, τ, B<sub>relax</sub>)*, with:
-- *t* : the experimental time at which a data point was acquired
-- *τ* : the evolution time, between the prepolarisation and data acquision steps
-- *B<sub>relax</sub>* : the relaxation magnetic field, or the value of the magnetic field during the evolution time
+## Description FFC-NMR data generally consists in a collection of Free Induction Decay signals (FID) acquired using a 
+set of NMR sequence parameters. In this library, we assume three dimensional data *s(t, τ, B<sub>relax</sub>)*, 
+with: 
+- *t* : the experimental time at which a data point was acquired 
+- *τ* : the evolution time, between the prepolarisation and data acquisition steps 
+- *B<sub>relax</sub>* : the relaxation magnetic field, or the value of the magnetic field during the evolution time 
 
 The objective of this librairy is, from the signal *s(t, τ, B<sub>relax</sub>)*, to compute the relaxation profiles *R<sub>1</sub>(B<sub>relax</sub>)*, which provide valuable information about the molecular dynamics in a sample.
 
@@ -28,7 +30,7 @@ Step one : clone this repository and save it your computer
 Step two : add the directory where you saved this library to your path environment (see example below!)
 
 ## Example
-vlf-mri is easy to use! Here's an example:
+vlf-mri is easy to use! You can see plenty of examples in the /testing_suite/ directory. Here's an example:
 
 ```python
 # adding the path where vlf_mri is saved
