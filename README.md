@@ -53,7 +53,6 @@ fid_data.apply_mask(sigma=5, display_report=True)  # This should do the trick!
 ```python
 fid_data.batch_plot()  # This is better!
 ```
-
 ![alt text](https://github.com/ReciprocalSpace/ReciprocalSpace/blob/main/images/fid_after_mask.png)
 
 ```python
