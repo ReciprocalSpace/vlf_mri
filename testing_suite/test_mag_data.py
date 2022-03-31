@@ -86,7 +86,7 @@ def test_to_ilt():
     # mag_data_mean.save_to_pdf(display=True)
 
 
-if __name__=="__main__":
+if __name__ == "__main__":
     # test_batch_plot()
     # test_apply_mask()
     # test_slicing()

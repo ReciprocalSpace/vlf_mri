@@ -4,8 +4,11 @@ from pathlib import Path
 
 folder = Path("relax_test_data")
 file = Path("relax_test_data/sang_total-2020-15-12_b.sdf")
+
+file = Path("test_data.sdf")
 fid_data = vlf_mri.import_sdf_file(file)
-# fid_data.apply_mask(sigma=2, display_report=True)
+fid_data.batch_plot("Fid data with outliers!")
+fid_data.apply_mask(sigma=5, display_report=True)
 mag_data_mean = fid_data.to_mag_mean(t_0=5, t_1=50)
 # mag_data_mean.apply_mask(sigma=3)
 rel_data = mag_data_mean.to_rel()
