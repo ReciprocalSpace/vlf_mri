@@ -27,6 +27,7 @@ share/python-wheels/
 *.egg
 testing_suite/relax_test_data/
 testing_suite/pdfsaver_output/
+testing_suite/ilt_lambda/
 
 MANIFEST
 

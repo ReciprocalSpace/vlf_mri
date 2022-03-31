@@ -89,11 +89,13 @@ class MagData(VlfData):
         """
         output = []
 
-        for mag_matrix_i, mask_i in zip(self.data, self.mask):
+        for mag_matrix_i, tau_i, mask_i in zip(self.data, self.tau, self.mask):
             unmask_data = mag_matrix_i[~mask_i]
-            cond = unmask_data[0] < unmask_data[-1]
+            # cond = unmask_data[0] < unmask_data[-1]
+            cond = tau_i[0] < tau_i[-1]
             m0 = unmask_data.min() if cond else unmask_data.max()
             m1 = unmask_data.min() if not cond else unmask_data.max()
+            # m1 = unmask_data.max()
             output.append((m0 - mag_matrix_i) / (m0 - m1))
 
         output = np.array(output)
@@ -259,7 +261,11 @@ class MagData(VlfData):
                 ax.plot(self.tau[i], mag_data[i] / cst, "--.")
                 ax.set_xscale("log")
                 ax.tick_params(axis='both', which='major', pad=0)
-                ax.text(0, 0.9, r"$B_{relax}$=" f"{self.B_relax[i]:.1e} MHz")
+
+                x_txt = self.tau[i].min()
+                y_txt = mag_data[i].max()*0.9
+                s = r"$B_{relax}$=" f"{self.B_relax[i]:.1e} MHz"
+                ax.text(x_txt, y_txt, s)
             else:
                 ax.axis('off')
         for axes_i in axes_2D:
@@ -408,7 +414,7 @@ class MagData(VlfData):
         R1 = 1 / tau[np.argmin(np.absolute(mag - 0.63))]
         params.add('amp', value=1., min=0.)
         params.add('R1', value=R1, min=0)
-        params.add('C', value=0, min=0)
+        params.add('C', value=0)
         ind = ~ mask
         result_mono = mod.fit(mag[ind], params, tau=tau[ind])
         result_mono.best_fit = MagData._model_mono_exp(tau, result_mono.params['amp'].value,
@@ -443,7 +449,7 @@ class MagData(VlfData):
         params.add('alpha', value=0.5, min=0., max=1.)
         params.add('R11', value=R1, min=0)
         params.add('R12', value=R1 * 2, min=0)
-        params.add('C', value=0, min=0)
+        params.add('C', value=0)
         ind = ~mask
         result_bi = mod.fit(mag[ind], params, tau=tau[ind])
         result_bi.best_fit = MagData._model_bi_exp(tau, result_bi.params['amp'].value, result_bi.params['alpha'].value,
@@ -505,25 +511,13 @@ class MagData(VlfData):
 
         return RelData(self.data_file_path, rel_matrix, self.B_relax)  # rel_mask)
 
-    def to_ilt(self, R1: np.array = None, lmd: float = None):
-        if R1 is None:
-            log_r1_min = -np.log10(self.tau.max()) - np.log10(1)
-            log_r1_max = -np.log10(self.tau.min()) + np.log10(1)
-            R1 = np.logspace(log_r1_min, log_r1_max, 101)
-            R1 = np.logspace(-3, 3.3, 101)
-
-        # if lmd is None:
-        #     ind = min(self.data.shape[1], 5)
-        #     lmd = np.std(self.data[:, :-ind])
-
+    def to_ilt(self, R1: np.ndarray, lmd: float, reg_order=2, penalty="up"):
         ALPHA = []
         FIT = []
         R1_array = []
         LMD = []
         for tau_i, mag_i in zip(self.tau, self.data):
-            # lmd = np.std(mag_i[:10])/400
-            # lmd = 1
-            alpha, fit, loss = utils.ilt_uniform_penalty(tau_i, mag_i+1., R1, lmd)
+            alpha, fit, loss = utils.ilt_uniform_penalty(tau_i, mag_i+1., R1, lmd, reg_order, penalty)
             ALPHA.append(alpha)
             FIT.append(fit)
             R1_array.append(R1)
