@@ -19,19 +19,25 @@ class ILTData(VlfData):
 
     def batch_plot(self, title=None, save=""):
         offset = 0.
-        fig = plt.figure(figsize=(10/2.54, 35/2.54), tight_layout=True)
+        fig = plt.figure(figsize=(8/2.54, 10/2.54), tight_layout=True, dpi=150)
         ax = plt.gca()
         colormap = plt.cm.get_cmap("plasma")
         custom_colors = cycler('color', [colormap(x) for x in np.linspace(0, 0.9, len(self.B_relax))])
         ax.set_prop_cycle(cycler('color', custom_colors))
-        for R1_i, alpha_i, B_relax_i, lmd_i in zip(self.R1, self.data, self.B_relax, self.lmd):
+
+        for i, (R1_i, alpha_i, B_relax_i, lmd_i) in enumerate(zip(self.R1, self.data, self.B_relax, self.lmd)):
             ind0 = np.argmin(np.absolute(1 - R1_i))
+            ind0 = 0
+
+            plt.semilogx(R1_i[ind0:], R1_i[ind0:] ** 0 - 1 + offset, c="k", alpha=0.2, linewidth=1)
             plt.semilogx(R1_i[ind0:], alpha_i[ind0:]+offset)
+
             plt.title(title)
 
             plt.xlabel(r"Relaxation $R_1$ [s$^{-1}$]")
             plt.ylabel(r"Density $\alpha$ [arb. unit]")
-            plt.text(x=R1_i[ind0:].min(), y=offset + 0.01, s=rf"{B_relax_i:.1e}", fontsize=8)
+            if i%3 == 0:
+                plt.text(x=R1_i[ind0:].min(), y=offset + 0.01, s=rf"{B_relax_i:.1e}", fontsize=6)
 
             # plt.text(x=R1_i.min(), y=offset+0.01, s=rf"{B_relax_i:.1e} $\lambda$={lmd_i}", fontsize=8)
             offset += 0.05
@@ -41,6 +47,7 @@ class ILTData(VlfData):
         if save:
             plt.savefig(save)
         plt.show()
+
 
     def to_rel(self):
         raise NotImplemented
