@@ -91,10 +91,14 @@ class MagData(VlfData):
 
         for mag_matrix_i, tau_i, mask_i in zip(self.data, self.tau, self.mask):
             unmask_data = mag_matrix_i[~mask_i]
-            # cond = unmask_data[0] < unmask_data[-1]
-            cond = tau_i[0] < tau_i[-1]
+            reverse = tau_i[0] < tau_i[-1]
+            if reverse:
+                unmask_data = unmask_data.flip()
+
+            cond = unmask_data[0] < unmask_data[-1]
+
             m0 = unmask_data.min() if cond else unmask_data.max()
-            m1 = unmask_data.min() if not cond else unmask_data.max()
+            m1 = unmask_data.max() if cond else unmask_data.min()
             # m1 = unmask_data.max()
             output.append((m0 - mag_matrix_i) / (m0 - m1))
 
