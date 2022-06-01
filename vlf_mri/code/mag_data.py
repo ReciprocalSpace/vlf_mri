@@ -521,7 +521,7 @@ class MagData(VlfData):
         R1_array = []
         LMD = []
         for tau_i, mag_i in zip(self.tau, self.data):
-            alpha, fit, loss = utils.ilt_uniform_penalty(tau_i, mag_i+1., R1, lmd, reg_order, penalty)
+            alpha, fit, loss = utils.inverse_laplace_transform(tau_i, mag_i + 1., R1, lmd, reg_order, penalty)
             ALPHA.append(alpha)
             FIT.append(fit)
             R1_array.append(R1)

@@ -9,4 +9,5 @@ from vlf_mri.code.data_reader import import_sdf_file, import_sdf2_file, import_v
 from vlf_mri.code.fid_data import FidData
 from vlf_mri.code.mag_data import MagData
 from vlf_mri.code.rel_data import RelData
+from vlf_mri.code.ilt_data import ILTData
 

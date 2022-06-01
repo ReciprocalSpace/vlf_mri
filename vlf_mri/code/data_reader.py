@@ -7,6 +7,7 @@ from typing import Union
 from vlf_mri.code.fid_data import FidData
 from vlf_mri.code.mag_data import MagData
 from vlf_mri.code.rel_data import RelData
+from vlf_mri.code.ilt_data import ILTData
 
 # TODO : refactor using factory design pattern
 
@@ -202,7 +203,7 @@ class ImportSdfFileV2:
         self.fid.append(data)
 
 
-def import_vlf_file(vlf_file_path: Path) -> Union[FidData, MagData, RelData]:
+def import_vlf_file(vlf_file_path: Path) -> Union[FidData, MagData, RelData, ILTData]:
     """
     Import a vlf file
 
@@ -234,6 +235,12 @@ def import_vlf_file(vlf_file_path: Path) -> Union[FidData, MagData, RelData]:
     B_relax = old_vlf_object.B_relax
     if data_type == "REL":
         return RelData(data_file_path, vlf_data, B_relax, mask, best_fit)
+
+    if data_type == "ILT":
+        alpha = old_vlf_object.data
+        R1 = old_vlf_object.R1
+        lmd = old_vlf_object.lmd
+        return ILTData(data_file_path, "", alpha, B_relax, R1, lmd, mask, best_fit, False)
 
     tau = old_vlf_object.tau
     if data_type == "MAG":
